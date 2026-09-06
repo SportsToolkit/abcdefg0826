@@ -217,6 +217,60 @@ nav button.on{color:var(--accent)}
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* passcode lock */
+.lock{
+  position:fixed;inset:0;z-index:80;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 var(--gut) calc(40px + env(safe-area-inset-bottom));
+  opacity:0;pointer-events:none;transition:opacity .2s ease;
+}
+.lock.on{opacity:1;pointer-events:auto}
+.lock h2{font-size:19px;font-weight:600;margin-bottom:6px}
+.lock p{font-size:14.5px;color:var(--muted);margin:0 0 30px}
+.dots{display:flex;gap:16px;margin-bottom:38px;height:15px}
+.dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--faint);transition:background .12s,border-color .12s}
+.dots i.f{background:var(--accent);border-color:var(--accent)}
+.dots.bad i{border-color:var(--rose)}
+.dots.bad i.f{background:var(--rose);border-color:var(--rose)}
+.dots.shake{animation:sh .4s}
+@keyframes sh{10%,90%{transform:translateX(-5px)}30%,70%{transform:translateX(7px)}50%{transform:translateX(-7px)}}
+.pad{display:grid;grid-template-columns:repeat(3,84px);gap:16px;justify-content:center}
+.pad button{
+  height:76px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow);
+  font-size:29px;font-weight:400;letter-spacing:-0.02em;
+}
+.pad button:active{background:var(--sunken)}
+.pad button.blank{background:none;box-shadow:none;pointer-events:none}
+.pad button.wipe{font-size:16px;color:var(--muted);background:none;box-shadow:none}
+.lockrow{display:flex;gap:10px;margin-top:22px}
+.lockrow .ghost{margin-top:0}
+
+h2.sec .editacc{font-size:13px;font-weight:500;color:var(--accent);padding:2px 6px}
+.ychart{display:flex;align-items:flex-end;gap:5px;padding:18px 14px 12px;height:118px}
+.ycol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:7px;height:100%}
+.ycol i{display:block;width:100%;border-radius:4px 4px 2px 2px}
+.ycol span{font-size:9.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.sw{width:40px;height:40px;border-radius:50%;border:3px solid transparent}
+.sw.on{border-color:var(--text)}
+
+/* rental */
+:root{ --let:#6E42B8; --letSoft:#F0E9FA; }
+@media (prefers-color-scheme: dark){ :root{ --let:#B392E8; --letSoft:#241C36; } }
+.tyear{display:flex;align-items:center;gap:8px;background:var(--letSoft);border-radius:15px;padding:8px 8px;margin-top:14px}
+.tyear div{flex:1;text-align:center}
+.tyear b{display:block;font-size:17px;font-weight:650;color:var(--let)}
+.tyear small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.tyear button{width:44px;height:44px;border-radius:12px;color:var(--let);font-size:20px}
+.tyear button:active{background:var(--surface)}
+.hero.let .figure{color:var(--let)}
+.letpanel{border:1.5px solid var(--letSoft)}
+h2.sec .boxno{background:var(--letSoft);color:var(--let);border-radius:6px;padding:2px 7px;font-size:11px;font-weight:700;letter-spacing:0}
+nav{grid-template-columns:repeat(6,1fr)}
+nav button{font-size:10px;gap:2px}
+nav button svg{width:22px;height:22px}
+nav button[data-v="letting"].on{color:var(--let)}
 </style>
 </head>
 <body>
@@ -236,6 +290,7 @@ nav button.on{color:var(--accent)}
   <section class="view" id="v-joint"></section>
   <section class="view" id="v-rule"></section>
   <section class="view" id="v-savings"></section>
+  <section class="view" id="v-letting"></section>
 </main>
 
 <nav>
@@ -244,11 +299,25 @@ nav button.on{color:var(--accent)}
   <button data-v="joint"><svg viewBox="0 0 24 24"><circle cx="9.5" cy="9" r="3"/><circle cx="16.5" cy="10.5" r="2.3"/><path d="M4 19.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8M15.5 19.5c0-2.1 1.1-3.3 2.7-3.3s2.3 1.2 2.3 3.3"/></svg>Joint</button>
   <button data-v="rule"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v8.5l6 4"/></svg>50/30/20</button>
   <button data-v="savings"><svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16"/><path d="M8 15.5l3.5-4.5 3 2.5L20 7"/></svg>Savings</button>
+  <button data-v="letting"><svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20H4z"/><path d="M10 20v-5h4v5"/></svg>Rental</button>
 </nav>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 <div class="toast" id="toast"></div>
+
+<div class="lock on" id="lock">
+  <h2>Enter your passcode</h2>
+  <p>Four digits</p>
+  <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+  <div class="pad" id="pad">
+    <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+    <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+    <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+    <button class="blank"></button><button data-k="0">0</button>
+    <button class="wipe" data-k="wipe">Delete</button>
+  </div>
+</div>
 
 <script>
 "use strict";
@@ -300,11 +369,13 @@ function seed(){
     transfers:[{m:EPOCH,mine:0,theirs:0}],
     payFrom:null,
     items:[], pots:[], balances:{},
+    letting:{on:false, address:"", share:100, entries:[]},
     targets:{need:50,want:30,save:20}, lastBackup:null
   };
 }
 
 let S = seed(), view = "month";
+let taxYear = null;
 let cursor = new Date(); cursor.setDate(1);
 
 const mkey = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
@@ -341,6 +412,8 @@ function migrate(p){
 async function load(){
   const raw = await store.get(KEY);
   if (raw) { try { const p = migrate(JSON.parse(raw)); if (p && p.items) S = p; } catch(e){} }
+  if (!S.letting) S.letting = {on:false, address:"", share:100, entries:[]};
+  if (!S.payFrom) S.payFrom = null;
 }
 
 /* ---------- resolution as at month K ---------- */
@@ -378,6 +451,8 @@ const transferFrom = id => (jointId() && payFrom() === id) ? transfers().mine : 
 const accountOut = id => soloTotal(id) + transferFrom(id);
 
 /* cash actually leaving my accounts: solo payments plus the standing order */
+/* what you are actually on the hook for: your own bills plus your share of the joint ones */
+const trueCost = () => liveItems().reduce((s,i) => s + myShare(i), 0);
 function committed(){
   return soloAccounts().reduce((s,a) => s + accountOut(a.id), 0);
 }
@@ -392,6 +467,7 @@ function totals(){
   t.left = income() - t.all;
   return t;
 }
+function withMonth(m, fn){ const keep = K; K = m; try { return fn(); } finally { K = keep; } }
 function changes(){
   const prev = shiftKey(K,-1), out = [];
   S.items.forEach(it => {
@@ -427,13 +503,75 @@ function savingsSeries(){
   return {labels, vals: labels.map(potTotal)};
 }
 
+/* ---------- letting: UK tax year, 6 April to 5 April ---------- */
+const SA = {
+  rent:   {box:"20", label:"Rent received",              kind:"in"},
+  b24:    {box:"24", label:"Rent, rates, insurance, ground rents", kind:"exp"},
+  b25:    {box:"25", label:"Repairs and maintenance",     kind:"exp"},
+  b27:    {box:"27", label:"Legal, management and professional fees", kind:"exp"},
+  b28:    {box:"28", label:"Services provided, including wages", kind:"exp"},
+  b29:    {box:"29", label:"Other allowable expenses",    kind:"exp"},
+  fin:    {box:"44", label:"Residential finance costs",   kind:"fin"},
+  none:   {box:"\u2014", label:"Not allowable",            kind:"non"}
+};
+const SAORDER = ["b24","b25","b27","b28","b29"];
+
+function taxYearOf(iso){
+  const [y,m,d] = iso.split("-").map(Number);
+  return (m > 4 || (m === 4 && d >= 6)) ? y : y-1;
+}
+const tyLabel = y => y + "/" + String((y+1) % 100).padStart(2,"0");
+const tyRange = y => [y + "-04-06", (y+1) + "-04-05"];
+function currentTaxYear(){
+  const d = new Date();
+  return taxYearOf(d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"));
+}
+const shiftISOmonths = (iso,n) => {
+  const [y,m,d] = iso.split("-").map(Number);
+  const dt = new Date(y, m-1+n, 1);
+  const last = new Date(dt.getFullYear(), dt.getMonth()+1, 0).getDate();
+  return dt.getFullYear() + "-" + String(dt.getMonth()+1).padStart(2,"0") + "-" + String(Math.min(d,last)).padStart(2,"0");
+};
+/* expand recurring entries into dated occurrences inside one tax year */
+function lettingRows(y){
+  const [from,to] = tyRange(y), out = [];
+  (S.letting.entries||[]).forEach(e => {
+    if (e.every === "month"){
+      let d = e.date, guard = 0;
+      while (d <= to && guard++ < 400){
+        if (d >= from && (!e.until || d <= e.until)) out.push({...e, date:d});
+        d = shiftISOmonths(d,1);
+      }
+    } else if (e.date >= from && e.date <= to) out.push({...e});
+  });
+  return out.sort((a,b) => a.date < b.date ? -1 : 1);
+}
+function lettingSums(y){
+  const rows = lettingRows(y), s = {rent:0, fin:0, none:0, exp:0, byBox:{}};
+  SAORDER.forEach(k => s.byBox[k] = 0);
+  rows.forEach(r => {
+    if (r.cat === "rent") s.rent += r.amount;
+    else if (r.cat === "fin") s.fin += r.amount;
+    else if (r.cat === "none") s.none += r.amount;
+    else { s.byBox[r.cat] = (s.byBox[r.cat]||0) + r.amount; s.exp += r.amount; }
+  });
+  const share = (S.letting.share == null ? 100 : S.letting.share) / 100;
+  ["rent","fin","none","exp"].forEach(k => s[k] *= share);
+  SAORDER.forEach(k => s.byBox[k] *= share);
+  s.profit = s.rent - s.exp;
+  s.reducer = s.fin * 0.2;
+  s.rows = rows;
+  return s;
+}
+
 /* ---------- render ---------- */
 function render(){
   K = mkey(cursor);
   document.getElementById("mlabel").textContent = mshort(cursor);
   document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.v === view));
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-"+view));
-  ({month:renderMonth,accounts:renderAccounts,joint:renderJoint,rule:renderRule,savings:renderSavings})[view]();
+  if (taxYear === null) taxYear = currentTaxYear();
+  ({month:renderMonth,accounts:renderAccounts,joint:renderJoint,rule:renderRule,savings:renderSavings,letting:renderLetting})[view]();
   addShare();
 }
 function addShare(){
@@ -483,27 +621,62 @@ function renderMonth(){
       }).join("")}
       <div class="row sum"><div class="name">Total out</div><div class="amt num">${money(cash)}</div></div>
     </div>
-    ${t.buffer > 0.004 ? `<div class="hint">${money(t.buffer)} of that builds buffer in the joint account rather than being spent.</div>` : ""}
+    ${t.buffer > 0.004 ? `<div class="hint">${money(t.buffer)} of that is your own overpayment into the joint account, so it is set aside rather than spent. ${S.partner} adds separately, see the Joint tab for the account's full buffer.</div>` : ""}
     ${ch.length ? `<h2 class="sec">Different from ${prettyKey(shiftKey(K,-1))}</h2>
     <div class="panel">${ch.map(c => {
       if (c.kind === "started") return `<div class="kv"><span>${esc(c.name)} starts</span><b class="num">${money(c.now)}</b></div>`;
       if (c.kind === "ended") return `<div class="kv"><span>${esc(c.name)} ends</span><b class="num" style="color:var(--save)">was ${money(c.was)}</b></div>`;
       return `<div class="kv"><span>${esc(c.name)}</span><b class="num" style="color:var(--${c.now>c.was?"rose":"save"})">${money(c.was)} to ${money(c.now)}</b></div>`;
     }).join("")}</div>` : ""}
+    ${yearAhead()}
     ${stale() ? `<div class="hint">${S.lastBackup ? "Last backup " + new Date(S.lastBackup).toLocaleDateString("en-GB") + "." : "You have never saved a backup."} Safari can clear this app's storage without warning.</div>` : ""}
     <button class="ghost primary" id="exp">Save a backup file</button>
     <button class="ghost" id="impf">Restore from a file</button>
     <button class="ghost" id="imp">Restore from pasted text</button>
+    <div class="lockrow">
+      <button class="ghost" id="lockbtn">Lock now</button>
+      <button class="ghost" id="pinbtn">Change passcode</button>
+    </div>
     <input type="file" id="picker" accept=".json,application/json,text/plain" style="display:none">
   `;
   document.getElementById("exp").onclick = exportData;
   document.getElementById("imp").onclick = importData;
+  document.getElementById("lockbtn").onclick = lockUp;
+  document.getElementById("pinbtn").onclick = changePin;
   document.getElementById("impf").onclick = () => document.getElementById("picker").click();
   document.getElementById("picker").onchange = async e => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
     try { await applyBackup(await f.text()); } catch(err) { toast("That file could not be read."); }
   };
+}
+
+function yearAhead(){
+  if (!S.items.length) return "";
+  const months = [], vals = [];
+  for (let i = 0; i < 12; i++){
+    const m = shiftKey(K,i);
+    months.push(m);
+    vals.push(withMonth(m, trueCost));
+  }
+  const max = Math.max(...vals), min = Math.min(...vals);
+  if (max - min < 0.5) return "";
+  const notes = [];
+  for (let i = 1; i < 12; i++){
+    const d = vals[i] - vals[i-1];
+    if (Math.abs(d) > 0.5) notes.push({m:months[i], d});
+  }
+  const bars = vals.map((v,i) => {
+    const h = max ? Math.max(6, (v/max)*72) : 6;
+    return `<div class="ycol"><i style="height:${h.toFixed(0)}px;background:var(--${i===0?"accent":"need"});opacity:${i===0?1:.42}"></i>
+      <span>${months[i].slice(5)}</span></div>`;
+  }).join("");
+  return `<h2 class="sec">What you are committed to<span class="amt">${money0(min)} to ${money0(max)}</span></h2>
+    <div class="panel"><div class="ychart">${bars}</div>
+    ${notes.length ? notes.slice(0,4).map(n => `<div class="kv"><span>${prettyKey(n.m)}</span>
+      <b class="num" style="color:var(--${n.d>0?"rose":"save"})">${n.d>0?"+":"\u2212"}${money(Math.abs(n.d))} a month</b></div>`).join("")
+      : `<div class="note">Nothing changes over the next year on current figures.</div>`}</div>
+    <div class="hint">Your own bills plus your share of the joint ones, month by month, before the rounding on your standing order. Give anything that stops, like nursery, a last month and it shows up here.</div>`;
 }
 
 function itemRows(list, showShare){
@@ -539,7 +712,9 @@ function renderAccounts(){
         <span class="amt num">${money(via)}</span>
         <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
       </button>` : "");
-    return `<h2 class="sec"><i class="dot" style="background:${a.colour||"var(--faint)"}"></i>${esc(a.name)}<span class="amt">${money(accountOut(a.id))}</span></h2>
+    return `<h2 class="sec"><i class="dot" style="background:${a.colour||"var(--faint)"}"></i>${esc(a.name)}
+      <button class="editacc" data-open="__acct:${a.id}" aria-label="Edit ${esc(a.name)}">Edit</button>
+      <span class="amt">${money(accountOut(a.id))}</span></h2>
       <div class="panel">${rows || `<div class="note">Nothing here yet.</div>`}
       ${dormant.length ? `<div class="note">Not running this month: ${dormant.map(d => esc(d.name)).join(", ")}</div>` : ""}</div>
       <button class="ghost" data-add="${a.id}">Add a payment</button>`;
@@ -552,15 +727,22 @@ function renderAccounts(){
     </div>
     <div class="hint">Changes apply from ${mname(cursor)} onwards. Earlier months keep what they had.</div>
     ${solo}
+    <button class="ghost" id="addacct">Add an account</button>
     <div class="hint">${jid ? `The shared bills behind that standing order live on the Joint tab.` : ""}</div>`;
   document.getElementById("inc").onchange = async e => { setAt(S.income, K, {v:Number(e.target.value)||0}); await save(); render(); };
   document.getElementById("oinc").onchange = async e => { setAt(S.otherIncome, K, {v:Number(e.target.value)||0}); await save(); render(); };
+  document.getElementById("addacct").onclick = async () => {
+    const n = prompt("What is the account called?");
+    if (!n || !n.trim()) return;
+    S.accounts.push({id:uid(), name:n.trim(), colour:SWATCH[S.accounts.length % SWATCH.length]});
+    await save(); render();
+  };
 }
 
 function renderJoint(){
   document.getElementById("title").textContent = "Joint";
   const p = esc(S.partner), jid = jointId(), tr = transfers();
-  const full = jointCosts(), mine = jointMine(), theirs = full - mine;
+  const full = jointCosts(), mine = jointMine(), theirs2 = full - mine, theirs = theirs2;
   const blocks = S.groups.map(g => {
     const list = liveItems().filter(i => i.group === g.id).sort((x,y) => amt(y)-amt(x));
     const tot = list.reduce((s,i) => s + amt(i), 0);
@@ -588,7 +770,9 @@ function renderJoint(){
       <div class="kv"><span>Paid from</span><select id="pf" style="width:auto;flex:none;min-width:170px">${soloAccounts().map(a =>
         `<option value="${a.id}"${payFrom()===a.id?" selected":""}>${esc(a.name)}</option>`).join("")}</select></div>
       <div class="kv"><span>${p} sends</span><input type="number" step="1" inputmode="decimal" id="tt" value="${tr.theirs}"></div>
-      <div class="kv"><span>Buffer built this month</span><b class="num" style="color:var(--${tr.mine+tr.theirs-full < 0 ? "rose":"save"})">${money(tr.mine + tr.theirs - full)}</b></div>
+      <div class="kv"><span>You send over your share</span><b class="num" style="color:var(--${tr.mine-mine < 0 ? "rose":"save"})">${tr.mine-mine>=0?"+":"\u2212"}${money(Math.abs(tr.mine-mine))}</b></div>
+      <div class="kv"><span>${p} sends over ${p==="Partner"?"their":"her"} share</span><b class="num" style="color:var(--${tr.theirs-theirs2 < 0 ? "rose":"save"})">${tr.theirs-theirs2>=0?"+":"\u2212"}${money(Math.abs(tr.theirs-theirs2))}</b></div>
+      <div class="kv"><span>Buffer the account gains</span><b class="num" style="color:var(--${tr.mine+tr.theirs-full < 0 ? "rose":"save"})">${money(tr.mine + tr.theirs - full)}</b></div>
     </div>
     ${blocks}`;
   document.getElementById("tm").onchange = async e => { setAt(S.transfers, K, {mine:Number(e.target.value)||0}); await save(); render(); };
@@ -654,6 +838,7 @@ function renderSavings(){
         : was ? `<b style="color:var(--${now>=was?"save":"rose"})">${now>=was?"up":"down"} ${money(Math.abs(now-was))}</b> on ${prettyKey(pk)}`
         : "first month recorded"}</div>
     </div>
+
     ${spark(labels, vals)}
     ${S.pots.length ? `<div class="panel">${S.pots.map(p => {
       const b = balAt(p.id,K), q = balAt(p.id,pk);
@@ -702,6 +887,63 @@ function renderSavings(){
   };
 }
 
+function renderLetting(){
+  document.getElementById("title").textContent = "Rental";
+  const L = S.letting, y = taxYear, s = lettingSums(y);
+  const [from,to] = tyRange(y);
+  const fmt = iso => { const [yy,mm,dd] = iso.split("-"); return dd + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mm-1]; };
+  const group = k => {
+    const rows = s.rows.filter(r => r.cat === k);
+    if (!rows.length) return "";
+    const tot = rows.reduce((n,r) => n + r.amount, 0) * ((L.share==null?100:L.share)/100);
+    return `<h2 class="sec"><span class="boxno">Box ${SA[k].box}</span>${SA[k].label}<span class="amt">${money(tot)}</span></h2>
+      <div class="panel">${rows.map(r => `<button class="row" data-open="__let:${r.id}:${r.date}">
+        <span class="name">${esc(r.desc||SA[k].label)}<small>${fmt(r.date)}${r.every==="month"?" \u00B7 monthly":""}</small></span>
+        <span class="amt num">${money(r.amount)}</span>
+        <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
+      </button>`).join("")}</div>`;
+  };
+  const allowanceBetter = s.rent > 1000 && s.exp < 1000;
+
+  document.getElementById("v-letting").innerHTML = `
+    <div class="tyear">
+      <button id="typrev" aria-label="Previous tax year">&#8249;</button>
+      <div><b>${tyLabel(y)}</b><small>6 Apr ${y} to 5 Apr ${y+1}</small></div>
+      <button id="tynext" aria-label="Next tax year">&#8250;</button>
+    </div>
+    <div class="hero let">
+      <div class="label">Taxable rental profit</div>
+      <div class="figure num">${money(s.profit)}</div>
+      <div class="sub num"><b>${money(s.rent)}</b> rent, <b>${money(s.exp)}</b> allowable costs</div>
+    </div>
+    ${s.fin > 0.004 ? `<div class="panel letpanel">
+      <div class="kv"><span>Residential finance costs, box 44</span><b class="num">${money(s.fin)}</b></div>
+      <div class="kv"><span>Basic rate reducer this gives you</span><b class="num" style="color:var(--let)">${money(s.reducer)}</b></div>
+      <div class="note">Mortgage interest is not deducted from profit. HMRC turns it into a 20% reduction in your tax bill instead. Only the interest counts, never the capital you repay.</div>
+    </div>` : ""}
+    ${allowanceBetter ? `<div class="hint">Your costs come to less than £1,000. Claiming the £1,000 property income allowance instead, box 20.1, would leave you better off by ${money(1000 - s.exp)} of taxable profit. You cannot claim both.</div>` : ""}
+    ${group("rent")}
+    ${SAORDER.map(group).join("")}
+    ${group("fin")}
+    ${group("none")}
+    ${s.rows.length ? "" : `<div class="panel"><div class="note">Nothing recorded for ${tyLabel(y)} yet. Add the rent first, set it to repeat monthly, then add costs as they come up.</div></div>`}
+    <button class="ghost primary" data-addlet="1">Add an entry</button>
+    <h2 class="sec">Property</h2>
+    <div class="panel">
+      <div class="kv"><span>Address or nickname</span><input type="text" id="laddr" value="${esc(L.address||"")}" style="width:190px;text-align:right"></div>
+      <div class="kv"><span>Your share of it</span><input type="number" min="1" max="100" id="lshare" value="${L.share==null?100:L.share}" style="width:96px"></div>
+      <div class="note">Set your share below 100 if you own it jointly. Every figure above is then your portion only.</div>
+    </div>
+    <div class="hint">Categories follow the SA105 UK property pages, so each section matches the box you copy it into. Keep the receipts; this is a record, not a submission.</div>`;
+
+  document.getElementById("typrev").onclick = () => { taxYear--; render(); };
+  document.getElementById("tynext").onclick = () => { taxYear++; render(); };
+  document.getElementById("laddr").onchange = async e => { L.address = e.target.value; await save(); };
+  document.getElementById("lshare").onchange = async e => {
+    L.share = Math.max(1, Math.min(100, Number(e.target.value)||100)); await save(); render();
+  };
+}
+
 function spark(labels, vals){
   if (vals.length < 2) return "";
   const w = 340, h = 110, pad = 6;
@@ -747,6 +989,8 @@ function closeSheet(){
   document.body.classList.remove("locked");
 }
 
+const SWATCH = ["#EA1D25","#FF4F40","#2C9C8F","#7B5BE0","#2F6FD0","#E08A1E","#1F8A5B","#8A8F98"];
+
 function sheetBody(){
   const head = t => `<div class="grab"></div>
     <div class="sheethead"><h3>${t}</h3><button class="done" id="sdone">Done</button></div>`;
@@ -764,6 +1008,48 @@ function sheetBody(){
         <input type="month" id="s_twhen" value="${K}"></div>
       <div class="sheetnote">Your share of the ${esc(jname)} bills this month is ${money(jointMine())}.
         ${tr.mine >= jointMine() ? `The extra ${money(tr.mine - jointMine())} builds buffer.` : `You are short by ${money(jointMine() - tr.mine)}.`}</div>`;
+  }
+
+  if (String(sheetFor).startsWith("__let:")){
+    const id = sheetFor.split(":")[1];
+    const e = (S.letting.entries||[]).find(x => x.id === id);
+    if (!e) return head("Not found");
+    return head("Rental entry") + `
+      <div class="field big"><label>Amount</label>
+        <input type="number" step="0.01" inputmode="decimal" id="l_amt" value="${e.amount}"></div>
+      <div class="field"><label>What was it</label><input type="text" id="l_desc" value="${esc(e.desc||"")}" placeholder="Boiler service"></div>
+      <div class="field"><label>Counts as</label>
+        <select id="l_cat">${Object.keys(SA).map(k =>
+          `<option value="${k}"${e.cat===k?" selected":""}>Box ${SA[k].box} \u00B7 ${SA[k].label}</option>`).join("")}</select></div>
+      <div class="sheetnote">${e.cat === "fin" ? "Enter the interest only. The capital you repay is not a cost, log that as Not allowable if you want it recorded."
+        : e.cat === "none" ? "Capital repayments and improvements are not allowable against rental profit. Logged here for your own records only."
+        : e.cat === "rent" ? "Gross rent, before any agent commission. Put the commission in box 27 separately."
+        : "Keep the receipt. HMRC can ask for it up to five years after the filing deadline."}</div>
+      <div class="two">
+        <div class="field"><label>Date</label><input type="date" id="l_date" value="${e.date}"></div>
+        <div class="field"><label>Repeats</label>
+          <select id="l_every"><option value=""${!e.every?" selected":""}>One off</option>
+            <option value="month"${e.every==="month"?" selected":""}>Every month</option></select></div>
+      </div>
+      ${e.every ? `<div class="field"><label>Stops after</label><input type="date" id="l_until" value="${e.until||""}"></div>` : ""}
+      <div class="sheetact"><button class="remove" id="l_del">Remove this entry</button></div>`;
+  }
+
+  if (String(sheetFor).startsWith("__acct:")){
+    const id = sheetFor.slice(7);
+    const acc = S.accounts.find(x => x.id === id);
+    if (!acc) return head("Not found");
+    const used = S.items.filter(i => i.acct === id).length;
+    const isJoint = jointId() === id;
+    return head("Account") + `
+      <div class="field"><label>Name</label><input type="text" id="s_aname" value="${esc(acc.name)}"></div>
+      <div class="field"><label>Colour</label>
+        <div class="swatches">${SWATCH.map(c =>
+          `<button class="sw${acc.colour===c?" on":""}" style="background:${c}" data-sw="${c}" aria-label="Colour"></button>`).join("")}</div></div>
+      <div class="sheetnote">${isJoint ? "This is the joint account. Its bills are managed on the Joint tab."
+        : used ? used + " payment" + (used===1?"":"s") + " sit here." : "No payments here yet."}</div>
+      ${(!used && !isJoint && S.accounts.length > 1) ? `<div class="sheetact">
+        <button class="remove" id="s_adel">Remove this account</button></div>` : ""}`;
   }
 
   const it = findItem(sheetFor);
@@ -805,6 +1091,38 @@ function wireSheet(){
     $("s_tfrom").onchange = async e => { S.payFrom = e.target.value; await redraw(); };
     return;
   }
+  if (String(sheetFor).startsWith("__let:")){
+    const id = sheetFor.split(":")[1];
+    const e = (S.letting.entries||[]).find(x => x.id === id);
+    if (!e) return;
+    $("l_amt").onchange = async ev => { e.amount = Number(ev.target.value)||0; await redraw(); };
+    $("l_desc").onchange = async ev => { e.desc = ev.target.value; await redraw(); };
+    $("l_cat").onchange = async ev => { e.cat = ev.target.value; await redraw(); };
+    $("l_date").onchange = async ev => { if (ev.target.value){ e.date = ev.target.value; await redraw(); } };
+    $("l_every").onchange = async ev => { e.every = ev.target.value || null; if (!e.every) e.until = null; await redraw(); };
+    if ($("l_until")) $("l_until").onchange = async ev => { e.until = ev.target.value || null; await redraw(); };
+    $("l_del").onclick = async () => {
+      if (!confirm("Remove this entry?")) return;
+      S.letting.entries = S.letting.entries.filter(x => x.id !== id);
+      closeSheet(); await save(); render();
+    };
+    return;
+  }
+  if (String(sheetFor).startsWith("__acct:")){
+    const id = sheetFor.slice(7);
+    const acc = S.accounts.find(x => x.id === id);
+    $("s_aname").onchange = async e => { acc.name = e.target.value; await redraw(); };
+    document.querySelectorAll("[data-sw]").forEach(b => b.onclick = async e => {
+      acc.colour = e.currentTarget.dataset.sw; await redraw();
+    });
+    if ($("s_adel")) $("s_adel").onclick = async () => {
+      if (!confirm("Remove " + acc.name + "?")) return;
+      S.accounts = S.accounts.filter(x => x.id !== id);
+      if (S.payFrom === id) S.payFrom = null;
+      closeSheet(); await save(); render();
+    };
+    return;
+  }
   const it = findItem(sheetFor);
   if (!it) return;
   $("s_amt").onchange = async e => {
@@ -832,6 +1150,16 @@ document.addEventListener("click", async e => {
   const nav = e.target.closest("nav button");
   if (nav) { view = nav.dataset.v; closeSheet(); render(); window.scrollTo(0,0); return; }
   if (e.target.id === "scrim") { closeSheet(); return; }
+  const addlet = e.target.closest("[data-addlet]");
+  if (addlet){
+    const today = new Date();
+    const iso = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+    const inYear = taxYearOf(iso) === taxYear ? iso : tyRange(taxYear)[0];
+    const ent = {id:uid(), date:inYear, desc:"", amount:0, cat:S.letting.entries.length ? "b25" : "rent", every:S.letting.entries.length ? null : "month", until:null};
+    S.letting.entries.push(ent);
+    await save(); render(); openSheet("__let:" + ent.id);
+    return;
+  }
   const add = e.target.closest("[data-add]");
   if (add) {
     const [acct, group] = add.dataset.add.split(":");
@@ -1113,6 +1441,34 @@ function docFor(v){
     return {title:"50/30/20", subtitle: mname(cursor), blocks:B, stamp};
   }
 
+  if (v === "letting"){
+    const y = taxYear, s = lettingSums(y), L = S.letting;
+    const fmt = iso => { const [yy,mm,dd] = iso.split("-"); return dd + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mm-1] + " " + yy; };
+    const shr = (L.share==null?100:L.share)/100;
+    if (L.address) { sec("Property"); row("Address", ""); note(L.address); }
+    if (shr < 1) note("Figures shown are your " + (shr*100) + "% share.");
+    const block = k => {
+      const rows = s.rows.filter(r => r.cat === k);
+      if (!rows.length) return;
+      sec("Box " + SA[k].box + "  \u00B7  " + SA[k].label);
+      rows.forEach(r => row(r.desc || SA[k].label, money(r.amount * shr), fmt(r.date) + (r.every==="month" ? ", monthly" : "")));
+      row("Total", money(rows.reduce((n,r)=>n+r.amount,0) * shr), null, true);
+    };
+    block("rent"); SAORDER.forEach(block); block("fin"); block("none");
+    sec("Summary for the return");
+    row("Box 20, total rents", money(s.rent));
+    SAORDER.forEach(k => { if (s.byBox[k] > 0.004) row("Box " + SA[k].box + ", " + SA[k].label.toLowerCase(), money(s.byBox[k])); });
+    row("Allowable expenses", money(s.exp), null, true);
+    row("Taxable profit", money(s.profit), null, true);
+    if (s.fin > 0.004){
+      row("Box 44, residential finance costs", money(s.fin), null, true);
+      row("Basic rate reducer this produces", money(s.reducer), "20% of box 44, applied against your tax bill");
+    }
+    if (s.none > 0.004) note("Not allowable, recorded for your own reference only: " + money(s.none) + ". Capital repayments and improvements do not reduce rental profit.");
+    note("Prepared from your own records. Mortgage interest sits in box 44 rather than the expense boxes because of the Section 24 restriction. Check the figures before they go anywhere near a return.");
+    return {title:"Rental, " + tyLabel(y), subtitle:"6 April " + y + " to 5 April " + (y+1), blocks:B, stamp};
+  }
+
   const pk = shiftKey(K,-1);
   const entered = S.balances[K] || {};
   sec("Balances");
@@ -1150,7 +1506,82 @@ async function sharePdf(){
   toast("Saved. Share it from Files.");
 }
 
+
+/* ---------- passcode: a privacy screen, not encryption ---------- */
+const DEFAULT_PIN = {sha:"680f37711d33be1435526b8d971b87d8de07a8371958dbdf2100909286104890", fb:"f27647d43"};
+const PINKEY = "money.pin";
+let entry = "", locked = true, hiddenAt = 0;
+
+async function hashPin(s){
+  const salted = "money:" + s;
+  if (typeof crypto !== "undefined" && crypto.subtle){
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salted));
+    return {alg:"sha", value:[...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,"0")).join("")};
+  }
+  let h = 5381;
+  for (const c of salted) h = ((h*33) ^ c.charCodeAt(0)) >>> 0;
+  return {alg:"fb", value:"f" + h.toString(16)};
+}
+async function checkPin(s){
+  const got = await hashPin(s);
+  const stored = await store.get(PINKEY);
+  if (stored){
+    try { const o = JSON.parse(stored); if (o[got.alg]) return o[got.alg] === got.value; } catch(e){}
+  }
+  return DEFAULT_PIN[got.alg] === got.value;
+}
+function paintDots(bad){
+  const d = document.getElementById("dots");
+  d.className = "dots" + (bad ? " bad shake" : "");
+  d.innerHTML = [0,1,2,3].map(i => `<i class="${i < entry.length ? "f" : ""}"></i>`).join("");
+  if (bad) setTimeout(() => { entry = ""; paintDots(false); }, 420);
+}
+function lockUp(){
+  locked = true; entry = "";
+  document.getElementById("lock").classList.add("on");
+  document.body.classList.add("locked");
+  paintDots(false);
+}
+function unlock(){
+  locked = false; entry = "";
+  document.getElementById("lock").classList.remove("on");
+  document.body.classList.remove("locked");
+}
+async function tapKey(k){
+  if (k === "wipe"){ entry = entry.slice(0,-1); paintDots(false); return; }
+  if (entry.length >= 4) return;
+  entry += k;
+  paintDots(false);
+  if (entry.length === 4){
+    if (await checkPin(entry)) unlock();
+    else paintDots(true);
+  }
+}
+function wireLock(){
+  document.querySelectorAll("#pad button[data-k]").forEach(b => {
+    b.onclick = () => tapKey(b.dataset.k);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) hiddenAt = Date.now();
+    else if (!locked && hiddenAt && Date.now() - hiddenAt > 3*60*1000) lockUp();
+  });
+}
+async function changePin(){
+  const cur = prompt("Current passcode");
+  if (cur === null) return;
+  if (!await checkPin(cur)){ toast("That is not the current passcode."); return; }
+  const next = prompt("New four digit passcode");
+  if (next === null) return;
+  if (!/^\d{4}$/.test(next)){ toast("It needs to be four digits."); return; }
+  const h = await hashPin(next);
+  await store.set(PINKEY, JSON.stringify({[h.alg]: h.value}));
+  toast("Passcode changed.");
+}
+
+wireLock();
+lockUp();
 load().then(render);
+
 </script>
 </body>
 </html>
