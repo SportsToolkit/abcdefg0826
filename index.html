@@ -10,36 +10,42 @@
 <title>Money</title>
 <style>
 :root{
-  --bg:#F4F6FA;
+  --bg:#F3F5F9;
   --surface:#FFFFFF;
-  --sunken:#EDF1F6;
-  --line:#E1E7EF;
-  --text:#111C2B;
-  --muted:#5E7085;
-  --faint:#8797AB;
-  --need:#3C6DB0;
-  --want:#BF7A2A;
-  --save:#2A8B69;
-  --rose:#C0453F;
+  --sunken:#EBEFF5;
+  --line:#E3E8F0;
+  --text:#101A28;
+  --muted:#5B6D83;
+  --faint:#8494A8;
   --accent:#1F5FA8;
-  --shadow:0 1px 2px rgba(17,28,43,.06);
+  --rose:#BE4239;
+  --need:#3C6DB0;  --needSoft:#E7EEF9;
+  --want:#B0701C;  --wantSoft:#FAF0DE;
+  --save:#237A5C;  --saveSoft:#E1F1EB;
+  --glass:rgba(243,245,249,.86);
+  --sheetbg:#FFFFFF;
+  --shadow:0 1px 2px rgba(16,26,40,.05), 0 6px 18px rgba(16,26,40,.04);
+  --lift:0 -8px 40px rgba(16,26,40,.18);
   --gut:20px;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#0F1520;
-    --surface:#19212F;
-    --sunken:#141B27;
-    --line:#28313F;
-    --text:#EDF1F6;
+    --bg:#0E141E;
+    --surface:#18202D;
+    --sunken:#131A25;
+    --line:#26303E;
+    --text:#ECF1F7;
     --muted:#9AAABE;
-    --faint:#71839A;
-    --need:#6E9FE0;
-    --want:#E0A95E;
-    --save:#5CC4A0;
-    --rose:#E8807A;
+    --faint:#6F8098;
     --accent:#7FB0EE;
+    --rose:#E88079;
+    --need:#7FADE8;  --needSoft:#1C2A3C;
+    --want:#E0AC69;  --wantSoft:#2C2518;
+    --save:#5FC8A4;  --saveSoft:#152B24;
+    --glass:rgba(14,20,30,.86);
+    --sheetbg:#1B2430;
     --shadow:none;
+    --lift:0 -8px 40px rgba(0,0,0,.5);
   }
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -48,149 +54,169 @@ body{
   margin:0;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
   font-size:17px;line-height:1.45;letter-spacing:-0.005em;
-  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  padding-bottom:calc(80px + env(safe-area-inset-bottom));
   -webkit-font-smoothing:antialiased;
 }
+body.locked{overflow:hidden}
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.015em}
 button{font:inherit;color:inherit;background:none;border:none;padding:0;cursor:pointer}
 input,select{
   font-family:inherit;font-size:17px;color:var(--text);
-  background:var(--sunken);border:1px solid transparent;border-radius:10px;
-  padding:10px 12px;min-height:44px;
+  background:var(--sunken);border:1.5px solid transparent;border-radius:12px;
+  padding:11px 13px;min-height:46px;width:100%;
 }
 input:focus,select:focus{outline:none;border-color:var(--accent);background:var(--surface)}
-button:focus-visible,[data-open]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 header{
-  position:sticky;top:0;z-index:20;
-  background:color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  position:sticky;top:0;z-index:20;background:var(--glass);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
   padding:calc(env(safe-area-inset-top) + 12px) var(--gut) 12px;
   display:flex;align-items:center;gap:12px;
 }
-header h1{font-size:20px;flex:1;letter-spacing:-0.02em}
-.monthnav{display:flex;align-items:center;background:var(--sunken);border-radius:12px;padding:2px}
+header h1{font-size:21px;flex:1;letter-spacing:-0.025em}
+.monthnav{display:flex;align-items:center;background:var(--sunken);border-radius:13px;padding:3px}
 .monthnav button{width:38px;height:36px;border-radius:10px;color:var(--muted);font-size:19px;line-height:1}
 .monthnav button:active{background:var(--surface)}
-.monthnav span{min-width:66px;text-align:center;font-size:14px;font-weight:500}
+.monthnav span{min-width:64px;text-align:center;font-size:14px;font-weight:600}
 
 main{padding:4px var(--gut) 40px;max-width:620px;margin:0 auto}
 .view{display:none}
 .view.on{display:block}
 
-.hero{padding:14px 0 4px}
+.hero{padding:16px 0 2px}
 .hero .label{font-size:14px;color:var(--muted)}
-.hero .figure{font-size:46px;font-weight:640;letter-spacing:-0.04em;line-height:1.05;margin:8px 0 6px}
-.hero .sub{font-size:14px;color:var(--muted)}
-.hero .sub b{font-weight:500;color:var(--text)}
+.hero .figure{font-size:48px;font-weight:650;letter-spacing:-0.042em;line-height:1.02;margin:8px 0 7px}
+.hero .sub{font-size:14.5px;color:var(--muted)}
+.hero .sub b{font-weight:600;color:var(--text)}
 
-.bar{height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--sunken);margin:22px 0 14px;gap:2px}
-.bar i{display:block;height:100%;border-radius:5px}
-.split3{display:flex;gap:8px;margin-bottom:30px}
-.split3 div{flex:1}
-.split3 .k{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.split3 .v{font-size:19px;font-weight:600;letter-spacing:-0.02em;margin-top:2px}
-.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.bar{height:12px;border-radius:6px;display:flex;background:var(--sunken);margin:22px 0 16px;gap:3px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px}
+.split3{display:flex;gap:10px;margin-bottom:26px}
+.split3 div{flex:1;background:var(--surface);border-radius:14px;padding:11px 12px;box-shadow:var(--shadow)}
+.split3 .k{font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:6px}
+.split3 .v{font-size:19px;font-weight:650;letter-spacing:-0.025em;margin-top:3px}
+.dot{width:7px;height:7px;border-radius:50%;flex:none}
 
-h2.sec{
-  font-size:13px;font-weight:600;color:var(--faint);
-  margin:32px 0 8px;letter-spacing:0;
-}
+h2.sec{font-size:13px;font-weight:600;color:var(--faint);margin:30px 0 9px;display:flex;align-items:center;gap:8px}
+h2.sec .amt{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
 .panel{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
-.panel + .ghost{margin-top:12px}
 
-.row{display:flex;align-items:center;gap:12px;padding:14px 16px;position:relative}
+.row{display:flex;align-items:center;gap:11px;padding:14px 16px;position:relative;width:100%;text-align:left}
 .row + .row::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
+.row:active{background:var(--sunken)}
 .row .name{flex:1;min-width:0;font-size:17px}
 .row .name small{display:block;font-size:13px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
-.row .amt{font-size:17px;font-weight:600;letter-spacing:-0.015em}
-.row .amt.dim{font-weight:400;color:var(--muted)}
-.row .chev{color:var(--faint);font-size:15px;flex:none}
+.row .amt{font-size:17px;font-weight:600;letter-spacing:-0.015em;font-variant-numeric:tabular-nums}
+.row .chev{color:var(--faint);flex:none;width:8px}
+.row .chev svg{width:8px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
 .row.sum{background:var(--sunken)}
 .row.sum .name{color:var(--muted);font-size:15px}
-.tag{font-size:12px;color:var(--muted);background:var(--sunken);border-radius:6px;padding:3px 7px;flex:none}
-.panel .row .tag{background:var(--bg)}
+
+.chip{font-size:12px;font-weight:600;border-radius:7px;padding:3px 8px;flex:none;letter-spacing:0}
+.chip.need{background:var(--needSoft);color:var(--need)}
+.chip.want{background:var(--wantSoft);color:var(--want)}
+.chip.save{background:var(--saveSoft);color:var(--save)}
 
 .kv{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 16px;font-size:17px;position:relative}
 .kv + .kv::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
-.kv span{color:var(--muted);font-size:15px}
-.kv b{font-weight:600;letter-spacing:-0.015em}
-.kv input{width:130px;text-align:right;margin:-6px 0}
+.kv > span{color:var(--muted);font-size:15px}
+.kv b{font-weight:650;letter-spacing:-0.015em;font-variant-numeric:tabular-nums}
+.kv input{width:132px;text-align:right;margin:-5px 0;flex:none}
 .note{font-size:14px;color:var(--muted);line-height:1.5;padding:14px 16px;background:var(--sunken)}
-.hint{font-size:14px;color:var(--muted);margin:10px 2px 0;line-height:1.5}
-
-.edit{display:none;padding:4px 16px 16px;background:var(--sunken)}
-.edit.on{display:block}
-.edit .line{display:flex;gap:8px;margin-bottom:10px}
-.edit .line input[type=text]{flex:1;min-width:0}
-.edit .line input[type=number]{width:110px;text-align:right}
-.edit .line select{flex:0 0 108px}
-.whenrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.whenrow label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
-.whenrow label.wide{grid-column:1 / -1}
-.editfoot{display:flex;gap:20px;justify-content:flex-end;align-items:center;margin-top:14px;font-size:15px}
-.editfoot .undo{color:var(--accent)}
-.editfoot .del{color:var(--rose)}
+.hint{font-size:14px;color:var(--muted);margin:11px 2px 0;line-height:1.5}
 
 .ghost{
   display:block;width:100%;text-align:center;
   border:1px solid var(--line);border-radius:14px;
   padding:14px;font-size:16px;color:var(--muted);background:var(--surface);
-  margin-top:10px;min-height:48px;
+  margin-top:10px;min-height:50px;
 }
 .ghost:active{background:var(--sunken)}
-.ghost.primary{color:var(--accent);border-color:transparent;background:var(--surface);font-weight:500}
+.ghost.primary{color:var(--accent);font-weight:550;border-color:transparent;box-shadow:var(--shadow)}
+.sharebtn{margin-top:22px}
+.shareinner{display:inline-flex;align-items:center;gap:9px}
+.shareinner svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
-.pill{font-size:13px;font-weight:500;border-radius:8px;padding:4px 9px;background:var(--sunken);color:var(--muted)}
-.pill.warn{color:var(--rose)}
-.pill.good{color:var(--save)}
+.pill{font-size:13px;font-weight:600;border-radius:8px;padding:4px 9px;background:var(--sunken);color:var(--muted)}
+.pill.warn{background:var(--wantSoft);color:var(--want)}
+.pill.good{background:var(--saveSoft);color:var(--save)}
+.pill.over{background:var(--needSoft);color:var(--need)}
 
 .gauge{padding:16px}
-.gauge .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.gauge .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .gauge .top .t{font-size:15px;color:var(--muted)}
-.gauge .pc{font-size:30px;font-weight:640;letter-spacing:-0.03em}
-.gauge .track{height:8px;border-radius:4px;background:var(--sunken);overflow:hidden;position:relative}
-.gauge .track i{display:block;height:100%;border-radius:4px}
-.gauge .track u{position:absolute;top:-3px;width:2px;height:14px;background:var(--text);opacity:.35;border-radius:1px}
-.gauge .foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:8px}
+.gauge .pc{font-size:32px;font-weight:660;letter-spacing:-0.035em}
+.gauge .track{height:10px;border-radius:5px;background:var(--sunken);overflow:hidden;position:relative;margin-top:6px}
+.gauge .track i{display:block;height:100%;border-radius:5px}
+.gauge .track u{position:absolute;top:-3px;width:2px;height:16px;background:var(--text);opacity:.28;border-radius:1px}
+.gauge .foot{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:9px;font-variant-numeric:tabular-nums}
 
 .pot{padding:13px 16px;position:relative}
 .pot + .pot::before{content:"";position:absolute;left:16px;right:0;top:0;height:1px;background:var(--line)}
 .pot .top{display:flex;align-items:center;gap:10px}
 .pot .top .name{flex:1;font-size:17px}
-.pot input{width:126px;text-align:right;margin:-4px 0}
+.pot input{width:130px;text-align:right;margin:-4px 0;flex:none}
 .pot .meta{font-size:13px;margin-top:5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .pot .meta.up{color:var(--save)}
 .pot .meta.down{color:var(--rose)}
-.pot .x{color:var(--faint);font-size:20px;width:28px;text-align:right;flex:none}
-svg.spark{display:block;width:100%;height:120px;margin:14px 0 6px;overflow:visible}
+.pot .x{color:var(--faint);font-size:22px;width:26px;text-align:right;flex:none;line-height:1}
+svg.spark{display:block;width:100%;height:122px;margin:14px 0 6px;overflow:visible}
+
+/* bottom sheet */
+.scrim{
+  position:fixed;inset:0;z-index:50;background:rgba(10,16,26,.42);
+  opacity:0;pointer-events:none;transition:opacity .22s ease;
+}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:51;
+  background:var(--sheetbg);border-radius:22px 22px 0 0;box-shadow:var(--lift);
+  transform:translateY(102%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 var(--gut) calc(24px + env(safe-area-inset-bottom));
+}
+.sheet.on{transform:translateY(0)}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:10px auto 4px}
+.sheethead{display:flex;align-items:center;gap:12px;padding:6px 0 18px}
+.sheethead h3{font-size:20px;flex:1;letter-spacing:-0.02em}
+.sheethead .done{color:var(--accent);font-size:17px;font-weight:600;padding:6px 2px}
+.field{margin-bottom:16px}
+.field > label{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-bottom:7px}
+.field.big input{font-size:30px;font-weight:650;letter-spacing:-0.03em;text-align:left;padding:12px 14px;min-height:60px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.seg button{
+  padding:13px 4px;border-radius:12px;font-size:15px;font-weight:600;
+  background:var(--sunken);color:var(--muted);border:1.5px solid transparent;min-height:48px;
+}
+.seg button.on.need{background:var(--needSoft);color:var(--need);border-color:var(--need)}
+.seg button.on.want{background:var(--wantSoft);color:var(--want);border-color:var(--want)}
+.seg button.on.save{background:var(--saveSoft);color:var(--save);border-color:var(--save)}
+.sheetnote{font-size:13.5px;color:var(--muted);line-height:1.5;margin:-4px 0 18px}
+.sheetact{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.sheetact button{border-radius:13px;padding:14px;font-size:16px;font-weight:550;min-height:50px}
+.sheetact .undo{background:var(--sunken);color:var(--accent)}
+.sheetact .remove{background:var(--sunken);color:var(--rose)}
 
 nav{
   position:fixed;left:0;right:0;bottom:0;z-index:30;
   display:grid;grid-template-columns:repeat(5,1fr);
-  background:color-mix(in srgb, var(--surface) 92%, transparent);
-  backdrop-filter:saturate(180%) blur(20px);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-top:1px solid var(--line);
-  padding-bottom:env(safe-area-inset-bottom);
+  background:var(--glass);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);
 }
-nav button{padding:9px 2px 10px;font-size:11px;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:3px;min-height:52px}
+nav button{padding:9px 2px 10px;font-size:11px;font-weight:500;color:var(--faint);display:flex;flex-direction:column;align-items:center;gap:3px;min-height:54px}
 nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 nav button.on{color:var(--accent)}
 .toast{
-  position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(6px);
-  background:var(--text);color:var(--bg);border-radius:12px;padding:11px 18px;font-size:15px;
-  opacity:0;transition:opacity .18s ease, transform .18s ease;pointer-events:none;z-index:40;
+  position:fixed;left:50%;bottom:98px;transform:translateX(-50%) translateY(6px);
+  background:var(--text);color:var(--bg);border-radius:13px;padding:12px 18px;font-size:15px;font-weight:500;
+  opacity:0;transition:opacity .18s ease, transform .18s ease;pointer-events:none;z-index:60;
   max-width:80%;text-align:center;
 }
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
-
-.sharebtn{margin-top:22px}
-.shareinner{display:inline-flex;align-items:center;gap:9px}
-.shareinner svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head>
 <body>
@@ -220,6 +246,8 @@ nav button.on{color:var(--accent)}
   <button data-v="savings"><svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h16"/><path d="M8 15.5l3.5-4.5 3 2.5L20 7"/></svg>Savings</button>
 </nav>
 
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -270,12 +298,13 @@ function seed(){
       {id:"g50",name:"Even split",splits:[{m:EPOCH,mine:50}]}
     ],
     transfers:[{m:EPOCH,mine:0,theirs:0}],
+    payFrom:null,
     items:[], pots:[], balances:{},
     targets:{need:50,want:30,save:20}, lastBackup:null
   };
 }
 
-let S = seed(), view = "month", editing = null;
+let S = seed(), view = "month";
 let cursor = new Date(); cursor.setDate(1);
 
 const mkey = d => d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
@@ -333,16 +362,24 @@ function jointId(){
   return named ? named.id : null;
 }
 const soloAccounts = () => S.accounts.filter(a => a.id !== jointId());
+function payFrom(){
+  const solo = soloAccounts();
+  if (!solo.length) return null;
+  if (S.payFrom && solo.some(a => a.id === S.payFrom)) return S.payFrom;
+  return solo[0].id;
+}
 const income = () => { const a = at(S.income,K), b = at(S.otherIncome,K); return (a?a.v:0) + (b?b.v:0); };
 const transfers = () => at(S.transfers,K) || {mine:0,theirs:0};
 const jointCosts = () => liveItems().filter(i => i.acct === jointId()).reduce((s,i) => s + amt(i), 0);
 const jointMine = () => liveItems().filter(i => i.acct === jointId()).reduce((s,i) => s + myShare(i), 0);
 const soloTotal = id => liveItems().filter(i => i.acct === id).reduce((s,i) => s + myShare(i), 0);
+/* the standing order physically leaves one of the solo accounts */
+const transferFrom = id => (jointId() && payFrom() === id) ? transfers().mine : 0;
+const accountOut = id => soloTotal(id) + transferFrom(id);
 
 /* cash actually leaving my accounts: solo payments plus the standing order */
 function committed(){
-  const solo = soloAccounts().reduce((s,a) => s + soloTotal(a.id), 0);
-  return solo + (jointId() ? transfers().mine : 0);
+  return soloAccounts().reduce((s,a) => s + accountOut(a.id), 0);
 }
 /* need / want / save, with any joint overpayment treated as an earmarked need */
 function totals(){
@@ -415,7 +452,7 @@ function splitBar(t){
   return `<div class="bar">${seg("need")}${seg("want")}${seg("save")}</div>
   <div class="split3">
     ${["need","want","save"].map(k => `<div>
-      <div class="k"><i class="dot" style="background:var(--${k})"></i>${CATP[k]}</div>
+      <div class="k" style="color:var(--${k})"><i class="dot" style="background:var(--${k})"></i>${CATP[k]}</div>
       <div class="v num">${money0(t[k])}</div></div>`).join("")}
   </div>`;
 }
@@ -437,12 +474,13 @@ function renderMonth(){
     ${splitBar(t)}
     <h2 class="sec">Leaving your accounts</h2>
     <div class="panel">
-      ${soloAccounts().map(a => `<div class="row">
-        <div class="name">${esc(a.name)}</div>
-        <div class="amt num">${money(soloTotal(a.id))}</div></div>`).join("")}
-      ${jid ? `<div class="row">
-        <div class="name">${esc(S.accounts.find(a=>a.id===jid).name)}<small>standing order, ${money(jointMine())} is your share</small></div>
-        <div class="amt num">${money(tr.mine)}</div></div>` : ""}
+      ${soloAccounts().map(a => {
+        const via = transferFrom(a.id);
+        return `<div class="row">
+          <i class="dot" style="background:${a.colour||"var(--faint)"}"></i>
+          <div class="name">${esc(a.name)}${via ? `<small>includes ${money(via)} to the joint account</small>` : ""}</div>
+          <div class="amt num">${money(accountOut(a.id))}</div></div>`;
+      }).join("")}
       <div class="row sum"><div class="name">Total out</div><div class="amt num">${money(cash)}</div></div>
     </div>
     ${t.buffer > 0.004 ? `<div class="hint">${money(t.buffer)} of that builds buffer in the joint account rather than being spent.</div>` : ""}
@@ -474,68 +512,49 @@ function itemRows(list, showShare){
     const g = it.group ? grp(it.group) : null;
     const was = amtIn(it,prev);
     const moved = (!it.from || it.from <= prev) && Math.abs(was - amt(it)) > 0.004;
-    const pinned = it.amounts.some(e => e.m === K) && it.amounts.length > 1;
     const sub = [];
     if (showShare && g) sub.push(`your ${splitOf(g)}% is ${money(myShare(it))}`);
     if (moved) sub.push(`was ${money(was)}`);
     if (it.to) sub.push(`ends ${prettyKey(it.to)}`);
-    return `<div class="row" data-open="${it.id}" role="button" tabindex="0">
-      <div class="name">${esc(it.name)}${sub.length ? `<small>${sub.join(" · ")}</small>` : ""}</div>
-      <span class="tag">${CAT[it.cat]}</span>
-      <div class="amt num">${money(amt(it))}</div>
-      <span class="chev">${editing===it.id?"⌃":"⌄"}</span>
-    </div>
-    <div class="edit${editing===it.id?" on":""}">
-      <div class="line">
-        <input type="text" value="${esc(it.name)}" data-name="${it.id}" aria-label="Name">
-        <input type="number" step="0.01" inputmode="decimal" value="${amt(it)}" data-amt="${it.id}" aria-label="Amount">
-      </div>
-      <div class="line">
-        <select data-cat="${it.id}" aria-label="Category">${Object.keys(CAT).map(k =>
-          `<option value="${k}"${it.cat===k?" selected":""}>${CAT[k]}</option>`).join("")}</select>
-      </div>
-      <div class="whenrow">
-        <label class="wide">New amount applies from<input type="month" value="${K}" data-when="${it.id}"></label>
-        <label>First month<input type="month" value="${it.from||""}" data-from="${it.id}"></label>
-        <label>Last month<input type="month" value="${it.to||""}" data-to="${it.id}"></label>
-      </div>
-      <div class="editfoot">
-        ${pinned ? `<button class="undo" data-unpin="${it.id}">Undo this month's change</button>` : ""}
-        <button class="del" data-del="${it.id}">Remove</button>
-      </div>
-    </div>`;
+    return `<button class="row" data-open="${it.id}">
+      <span class="name">${esc(it.name)}${sub.length ? `<small>${sub.join(" \u00B7 ")}</small>` : ""}</span>
+      <span class="chip ${it.cat}">${CAT[it.cat]}</span>
+      <span class="amt num">${money(amt(it))}</span>
+      <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
+    </button>`;
   }).join("");
 }
 
 function renderAccounts(){
   document.getElementById("title").textContent = "Accounts";
-  const inc = at(S.income,K), oinc = at(S.otherIncome,K), jid = jointId(), tr = transfers();
+  const inc = at(S.income,K), oinc = at(S.otherIncome,K), jid = jointId(), pf = payFrom();
+  const jname = jid ? S.accounts.find(a => a.id === jid).name : "";
   const solo = soloAccounts().map(a => {
     const list = liveItems().filter(i => i.acct === a.id).sort((x,y) => amt(y)-amt(x));
     const dormant = S.items.filter(i => i.acct === a.id && !active(i));
-    return `<h2 class="sec">${esc(a.name)} · ${money(soloTotal(a.id))}</h2>
-      <div class="panel">${itemRows(list, false) || `<div class="note">Nothing here yet.</div>`}
+    const via = transferFrom(a.id);
+    const rows = itemRows(list, false) + (via ? `<button class="row" data-open="__transfer">
+        <span class="name">Standing order to ${esc(jname)}<small>your share of the bills is ${money(jointMine())}</small></span>
+        <span class="chip need">Transfer</span>
+        <span class="amt num">${money(via)}</span>
+        <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
+      </button>` : "");
+    return `<h2 class="sec"><i class="dot" style="background:${a.colour||"var(--faint)"}"></i>${esc(a.name)}<span class="amt">${money(accountOut(a.id))}</span></h2>
+      <div class="panel">${rows || `<div class="note">Nothing here yet.</div>`}
       ${dormant.length ? `<div class="note">Not running this month: ${dormant.map(d => esc(d.name)).join(", ")}</div>` : ""}</div>
       <button class="ghost" data-add="${a.id}">Add a payment</button>`;
   }).join("");
   document.getElementById("v-accounts").innerHTML = `
-    <h2 class="sec">Money in during ${mname(cursor)}</h2>
+    <h2 class="sec">Money in<span class="amt">${money(income())}</span></h2>
     <div class="panel">
       <div class="kv"><span>Salary after tax</span><input type="number" step="0.01" inputmode="decimal" id="inc" value="${inc?inc.v:0}"></div>
       <div class="kv"><span>Anything else</span><input type="number" step="0.01" inputmode="decimal" id="oinc" value="${oinc?oinc.v:0}"></div>
     </div>
     <div class="hint">Changes apply from ${mname(cursor)} onwards. Earlier months keep what they had.</div>
     ${solo}
-    ${jid ? `<h2 class="sec">${esc(S.accounts.find(a=>a.id===jid).name)}</h2>
-    <div class="panel">
-      <div class="kv"><span>Standing order out</span><input type="number" step="1" inputmode="decimal" id="tm" value="${tr.mine}"></div>
-      <div class="kv"><span>Your share of the bills</span><b class="num">${money(jointMine())}</b></div>
-      <div class="note">The shared bills themselves live on the Joint tab.</div>
-    </div>` : ""}`;
+    <div class="hint">${jid ? `The shared bills behind that standing order live on the Joint tab.` : ""}</div>`;
   document.getElementById("inc").onchange = async e => { setAt(S.income, K, {v:Number(e.target.value)||0}); await save(); render(); };
   document.getElementById("oinc").onchange = async e => { setAt(S.otherIncome, K, {v:Number(e.target.value)||0}); await save(); render(); };
-  const tm = document.getElementById("tm");
-  if (tm) tm.onchange = async e => { setAt(S.transfers, K, {mine:Number(e.target.value)||0}); await save(); render(); };
 }
 
 function renderJoint(){
@@ -566,11 +585,14 @@ function renderJoint(){
     <h2 class="sec">Standing orders in</h2>
     <div class="panel">
       <div class="kv"><span>You send</span><input type="number" step="1" inputmode="decimal" id="tm" value="${tr.mine}"></div>
+      <div class="kv"><span>Paid from</span><select id="pf" style="width:auto;flex:none;min-width:170px">${soloAccounts().map(a =>
+        `<option value="${a.id}"${payFrom()===a.id?" selected":""}>${esc(a.name)}</option>`).join("")}</select></div>
       <div class="kv"><span>${p} sends</span><input type="number" step="1" inputmode="decimal" id="tt" value="${tr.theirs}"></div>
       <div class="kv"><span>Buffer built this month</span><b class="num" style="color:var(--${tr.mine+tr.theirs-full < 0 ? "rose":"save"})">${money(tr.mine + tr.theirs - full)}</b></div>
     </div>
     ${blocks}`;
   document.getElementById("tm").onchange = async e => { setAt(S.transfers, K, {mine:Number(e.target.value)||0}); await save(); render(); };
+  document.getElementById("pf").onchange = async e => { S.payFrom = e.target.value; await save(); render(); };
   document.getElementById("tt").onchange = async e => { setAt(S.transfers, K, {theirs:Number(e.target.value)||0}); await save(); render(); };
   document.querySelectorAll("[data-split]").forEach(el => el.onchange = async e => {
     setAt(grp(e.target.dataset.split).splits, K, {mine:Math.max(0,Math.min(100,Number(e.target.value)||0))});
@@ -586,11 +608,11 @@ function renderRule(){
     const target = inc * S.targets[k]/100;
     const actual = k === "want" ? t.want + Math.max(t.left,0) : t[k];
     const diff = actual - target, over = diff > 0;
-    const good = k === "save" ? over : !over;
+    const cls = k === "save" ? (over ? "good" : "warn") : over ? (k === "need" ? "over" : "warn") : "good";
     return `<div class="panel" style="margin-bottom:10px"><div class="gauge">
       <div class="top">
         <div class="t">${CATP[k]}${k==="want"?" and what is left" : ""}</div>
-        <span class="pill ${good?"good":"warn"}">${over?"+":""}${money0(diff)}</span>
+        <span class="pill ${cls}">${over?"+":""}${money0(diff)}</span>
       </div>
       <div class="pc num" style="color:var(--${k})">${pct(actual).toFixed(0)}%</div>
       <div class="track"><i style="width:${Math.min(pct(actual),100)}%;background:var(--${k})"></i>
@@ -708,49 +730,122 @@ function spark(labels, vals){
 
 /* ---------- interaction ---------- */
 const findItem = id => S.items.find(i => i.id === id);
+let sheetFor = null;
+
+function openSheet(id){
+  sheetFor = id;
+  const sheet = document.getElementById("sheet"), scrim = document.getElementById("scrim");
+  sheet.innerHTML = sheetBody();
+  sheet.classList.add("on"); scrim.classList.add("on");
+  document.body.classList.add("locked");
+  wireSheet();
+}
+function closeSheet(){
+  sheetFor = null;
+  document.getElementById("sheet").classList.remove("on");
+  document.getElementById("scrim").classList.remove("on");
+  document.body.classList.remove("locked");
+}
+
+function sheetBody(){
+  const head = t => `<div class="grab"></div>
+    <div class="sheethead"><h3>${t}</h3><button class="done" id="sdone">Done</button></div>`;
+
+  if (sheetFor === "__transfer"){
+    const tr = transfers(), jid = jointId();
+    const jname = jid ? S.accounts.find(a => a.id === jid).name : "joint account";
+    return head("Standing order") + `
+      <div class="field big"><label>Amount you send each month</label>
+        <input type="number" step="1" inputmode="decimal" id="s_tamt" value="${tr.mine}"></div>
+      <div class="field"><label>Paid from</label>
+        <select id="s_tfrom">${soloAccounts().map(a =>
+          `<option value="${a.id}"${payFrom()===a.id?" selected":""}>${esc(a.name)}</option>`).join("")}</select></div>
+      <div class="field"><label>New amount applies from</label>
+        <input type="month" id="s_twhen" value="${K}"></div>
+      <div class="sheetnote">Your share of the ${esc(jname)} bills this month is ${money(jointMine())}.
+        ${tr.mine >= jointMine() ? `The extra ${money(tr.mine - jointMine())} builds buffer.` : `You are short by ${money(jointMine() - tr.mine)}.`}</div>`;
+  }
+
+  const it = findItem(sheetFor);
+  if (!it) return head("Not found");
+  const pinned = it.amounts.some(x => x.m === K) && it.amounts.length > 1;
+  const prev = shiftKey(K,-1), was = amtIn(it,prev);
+  const g = it.group ? grp(it.group) : null;
+  return head(esc(it.name)) + `
+    <div class="field big"><label>Amount</label>
+      <input type="number" step="0.01" inputmode="decimal" id="s_amt" value="${amt(it)}"></div>
+    <div class="field"><label>Applies from</label>
+      <input type="month" id="s_when" value="${K}"></div>
+    <div class="sheetnote">Months before this keep ${money(was)}.${g ? ` Your ${splitOf(g)}% share would be ${money(amt(it)*splitOf(g)/100)}.` : ""}</div>
+    <div class="field"><label>Counts as</label>
+      <div class="seg">${Object.keys(CAT).map(k =>
+        `<button class="${k}${it.cat===k?" on":""}" data-setcat="${k}">${CAT[k]}</button>`).join("")}</div></div>
+    <div class="field"><label>Name</label><input type="text" id="s_name" value="${esc(it.name)}"></div>
+    <div class="two">
+      <div class="field"><label>First month</label><input type="month" id="s_from" value="${it.from||""}"></div>
+      <div class="field"><label>Last month</label><input type="month" id="s_to" value="${it.to||""}"></div>
+    </div>
+    <div class="sheetnote">Leave those blank if it runs every month. Set a last month for anything that stops, like nursery.</div>
+    <div class="sheetact">
+      ${pinned ? `<button class="undo" id="s_undo">Undo this month's change</button>` : ""}
+      <button class="remove" id="s_del">Remove this payment</button>
+    </div>`;
+}
+
+function wireSheet(){
+  const $ = id => document.getElementById(id);
+  const redraw = async () => { await save(); render(); const s = document.getElementById("sheet"); s.innerHTML = sheetBody(); wireSheet(); };
+  $("sdone").onclick = closeSheet;
+
+  if (sheetFor === "__transfer"){
+    $("s_tamt").onchange = async e => {
+      const w = $("s_twhen").value || K;
+      setAt(S.transfers, w, {mine:Number(e.target.value)||0}); await redraw();
+    };
+    $("s_tfrom").onchange = async e => { S.payFrom = e.target.value; await redraw(); };
+    return;
+  }
+  const it = findItem(sheetFor);
+  if (!it) return;
+  $("s_amt").onchange = async e => {
+    setAt(it.amounts, $("s_when").value || K, {v:Number(e.target.value)||0}); await redraw();
+  };
+  $("s_name").onchange = async e => { it.name = e.target.value; await redraw(); };
+  $("s_from").onchange = async e => { it.from = e.target.value || null; await redraw(); };
+  $("s_to").onchange = async e => { it.to = e.target.value || null; await redraw(); };
+  document.querySelectorAll("[data-setcat]").forEach(b => b.onclick = async e => {
+    it.cat = e.currentTarget.dataset.setcat; await redraw();
+  });
+  if ($("s_undo")) $("s_undo").onclick = async () => {
+    it.amounts = it.amounts.filter(x => x.m !== K);
+    if (!it.amounts.length) it.amounts = [{m:EPOCH, v:0}];
+    await redraw(); toast("Back to the previous figure.");
+  };
+  $("s_del").onclick = async () => {
+    if (!confirm("Remove " + it.name + "?")) return;
+    S.items = S.items.filter(x => x.id !== it.id);
+    closeSheet(); await save(); render();
+  };
+}
 
 document.addEventListener("click", async e => {
   const nav = e.target.closest("nav button");
-  if (nav) { view = nav.dataset.v; editing = null; render(); window.scrollTo(0,0); return; }
-  const unpin = e.target.closest("[data-unpin]");
-  if (unpin) {
-    const it = findItem(unpin.dataset.unpin);
-    it.amounts = it.amounts.filter(a => a.m !== K);
-    if (!it.amounts.length) it.amounts = [{m:EPOCH, v:0}];
-    await save(); render(); toast("Back to the previous figure."); return;
-  }
-  const del = e.target.closest("[data-del]");
-  if (del) { S.items = S.items.filter(i => i.id !== del.dataset.del); editing = null; await save(); render(); return; }
+  if (nav) { view = nav.dataset.v; closeSheet(); render(); window.scrollTo(0,0); return; }
+  if (e.target.id === "scrim") { closeSheet(); return; }
   const add = e.target.closest("[data-add]");
   if (add) {
     const [acct, group] = add.dataset.add.split(":");
     const it = {id:uid(),acct,group:group||null,name:"New payment",cat:"need",from:K,to:null,amounts:[{m:K,v:0}]};
-    S.items.push(it); editing = it.id; await save(); render();
-    const f = document.querySelector(`[data-name="${it.id}"]`); if (f) { f.focus(); f.select(); }
+    S.items.push(it); await save(); render(); openSheet(it.id);
+    const f = document.getElementById("s_name"); if (f) { f.focus(); f.select(); }
     return;
   }
-  if (e.target.closest(".edit")) return;
   const row = e.target.closest("[data-open]");
-  if (row) { const id = row.dataset.open; editing = editing === id ? null : id; render(); return; }
+  if (row) { openSheet(row.dataset.open); return; }
 });
 
-document.addEventListener("change", async e => {
-  const d = e.target.dataset, t = e.target;
-  if (d.name) findItem(d.name).name = t.value;
-  else if (d.amt) {
-    const it = findItem(d.amt);
-    const when = document.querySelector(`[data-when="${d.amt}"]`);
-    setAt(it.amounts, (when && when.value) ? when.value : K, {v:Number(t.value)||0});
-  }
-  else if (d.cat) findItem(d.cat).cat = t.value;
-  else if (d.from) findItem(d.from).from = t.value || null;
-  else if (d.to) findItem(d.to).to = t.value || null;
-  else return;
-  await save(); render();
-});
-
-document.getElementById("prev").onclick = () => { cursor.setMonth(cursor.getMonth()-1); editing = null; render(); };
-document.getElementById("next").onclick = () => { cursor.setMonth(cursor.getMonth()+1); editing = null; render(); };
+document.getElementById("prev").onclick = () => { cursor.setMonth(cursor.getMonth()-1); closeSheet(); render(); };
+document.getElementById("next").onclick = () => { cursor.setMonth(cursor.getMonth()+1); closeSheet(); render(); };
 
 function toast(msg){
   const el = document.getElementById("toast");
@@ -942,8 +1037,8 @@ function docFor(v){
     row("Salary after tax", money(a?a.v:0));
     if (b && b.v) row("Other income", money(b.v));
     sec("Leaving your accounts");
-    soloAccounts().forEach(x => row(x.name, money(soloTotal(x.id))));
-    if (jid) row(S.accounts.find(x=>x.id===jid).name, money(tr.mine), "standing order, " + money(jointMine()) + " is your share");
+    soloAccounts().forEach(x => row(x.name, money(accountOut(x.id)),
+      transferFrom(x.id) ? "includes " + money(transferFrom(x.id)) + " to the joint account" : null));
     row("Total out", money(cash), null, true);
     sec("How it splits");
     row("Needs", money(t.need));
@@ -968,15 +1063,12 @@ function docFor(v){
     row("Other income", money(b?b.v:0));
     soloAccounts().forEach(x => {
       const list = liveItems().filter(i => i.acct === x.id).sort((p,q) => amt(q)-amt(p));
-      sec(x.name + "  ·  " + money(soloTotal(x.id)));
+      sec(x.name + "  \u00B7  " + money(accountOut(x.id)));
       list.forEach(i => row(i.name, money(amt(i)), CAT[i.cat]));
-      row("Subtotal", money(soloTotal(x.id)), null, true);
+      if (transferFrom(x.id)) row("Standing order to " + S.accounts.find(y=>y.id===jid).name,
+        money(transferFrom(x.id)), "your share of those bills is " + money(jointMine()));
+      row("Subtotal", money(accountOut(x.id)), null, true);
     });
-    if (jid){
-      sec(S.accounts.find(x=>x.id===jid).name);
-      row("Standing order out", money(tr.mine));
-      row("Your share of the bills", money(jointMine()), "the shared bills are listed on the joint sheet");
-    }
     row("Total leaving your accounts", money(committed()), null, true);
     return {title:"Accounts", subtitle: mname(cursor), blocks:B, stamp};
   }
@@ -1059,7 +1151,6 @@ async function sharePdf(){
 }
 
 load().then(render);
-
 </script>
 </body>
 </html>
