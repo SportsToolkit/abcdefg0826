@@ -287,6 +287,11 @@ nav button[data-v="letting"].on{color:var(--let)}
 .seg button.k_save.on{background:var(--saveSoft);color:var(--save);border-color:var(--save)}
 .seg button.k_want.on{background:var(--wantSoft);color:var(--want);border-color:var(--want)}
 .seg button.k_let.on{background:var(--letSoft);color:var(--let);border-color:var(--let)}
+
+.shotwrap{position:relative}
+.shot{display:block;width:100%;max-height:340px;object-fit:contain;border-radius:12px;background:var(--sunken)}
+.shotdel{display:block;width:100%;margin-top:10px;padding:12px;border-radius:12px;background:var(--sunken);color:var(--rose);font-size:15px;font-weight:550}
+.row .clip{color:var(--let);font-size:9px;vertical-align:2px}
 </style>
 </head>
 <body>
@@ -350,9 +355,10 @@ const store = (() => {
       return mem[k] || null;
     },
     async set(k,v){
-      if (hasW) { try { await window.storage.set(k,v); return; } catch(e){} }
-      if (hasLS) { try { localStorage.setItem(k,v); return; } catch(e){} }
+      if (hasW) { try { await window.storage.set(k,v); return true; } catch(e){} }
+      if (hasLS) { try { localStorage.setItem(k,v); return true; } catch(e){ mem[k] = v; return false; } }
       mem[k] = v;
+      return true;
     }
   };
 })();
@@ -414,7 +420,50 @@ function setAt(series, m, patch){
   series.sort((a,b) => a.m < b.m ? -1 : 1);
 }
 
-async function save(){ await store.set(KEY, JSON.stringify(S)); }
+async function save(){ return await store.set(KEY, JSON.stringify(S)); }
+const storeBytes = () => { try { return JSON.stringify(S).length; } catch(e){ return 0; } }
+const BUDGET = 4.4 * 1024 * 1024;
+
+/* shrink a photo hard: receipts only need to be legible, not archival */
+function shrinkImage(file, maxPx, q){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const im = new Image();
+    im.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(im.naturalWidth, im.naturalHeight));
+      const w = Math.max(1, Math.round(im.naturalWidth * scale));
+      const h = Math.max(1, Math.round(im.naturalHeight * scale));
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0,0,w,h);
+      ctx.drawImage(im, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      try { res({data:c.toDataURL("image/jpeg", q).split(",")[1], w, h}); }
+      catch(e){ rej(e); }
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("not an image")); };
+    im.src = url;
+  });
+}
+async function attachReceipt(entry, file){
+  let shot;
+  try { shot = await shrinkImage(file, 1400, 0.62); }
+  catch(e){ toast("That file could not be read as a photo."); return false; }
+  if (shot.data.length > 900000){
+    try { shot = await shrinkImage(file, 1000, 0.5); } catch(e){}
+  }
+  const before = entry.shot || null;
+  entry.shot = shot;
+  const ok = await save();
+  if (!ok){
+    entry.shot = before;
+    await save();
+    toast("No room left. Save a backup, then remove an older receipt.");
+    return false;
+  }
+  return true;
+}
 function migrate(p){
   if (!p || p.v === 2) return p;
   const num = v => ({m:EPOCH, v:Number(v)||0});
@@ -921,7 +970,7 @@ function renderLetting(){
         if (r.every === "month") bits.push("monthly");
         if (pc !== 100) bits.push(pc + "% of " + money(r.amount));
         return `<button class="row" data-open="__let:${r.id}:${r.date}">
-          <span class="name">${esc(r.desc || SA[k].label)}<small>${bits.join(" \u00B7 ")}</small></span>
+          <span class="name">${esc(r.desc || SA[k].label)}${r.shot ? ` <span class="clip" aria-label="has a receipt">\u25CF</span>` : ""}<small>${bits.join(" \u00B7 ")}</small></span>
           <span class="amt num">${money(claimed(r))}</span>
           <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
         </button>`;
@@ -962,6 +1011,11 @@ function renderLetting(){
       <div class="kv"><span>Your share of it</span><input type="number" min="1" max="100" id="lshare" value="${L.share == null ? 100 : L.share}" style="width:96px"></div>
       <div class="note">Set your share below 100 if you own it jointly. Every figure above is then your portion only.</div>
     </div>
+    ${(() => { const n = (S.letting.entries||[]).filter(x => x.shot).length;
+      if (!n) return "";
+      const pctFull = Math.min(100, Math.round(storeBytes()/BUDGET*100));
+      return `<div class="hint">${n} receipt${n===1?"":"s"} attached. Storage is ${pctFull}% full.${pctFull > 75 ? " Save a backup file soon and consider removing older photos." : ""}</div>`;
+    })()}
     <div class="hint">Sections follow the SA105 UK property pages, so each one matches the box you copy it into. This is a record, not a submission, and it is not tax advice.</div>`;
 
   document.getElementById("typrev").onclick = () => { taxYear--; render(); };
@@ -1121,6 +1175,12 @@ function sheetBody(){
             <option value="month"${e.every==="month"?" selected":""}>Every month</option></select></div>
       </div>
       ${e.every ? `<div class="field"><label>Stops after</label><input type="date" id="l_until" value="${e.until||""}"></div>` : ""}
+      <div class="field"><label>Receipt</label>
+        ${e.shot ? `<div class="shotwrap"><img class="shot" src="data:image/jpeg;base64,${e.shot.data}" alt="Receipt">
+          <button class="shotdel" id="l_shotdel">Remove receipt</button></div>`
+        : `<button class="ghost" id="l_shotadd" style="margin-top:0">Take a photo or choose one</button>`}
+        <input type="file" id="l_file" accept="image/*" style="display:none"></div>
+      <div class="sheetnote">Photos are shrunk to keep them small and are attached to the end of the PDF. Storage is about ${Math.round(storeBytes()/1024)}KB of the 4,400KB this app can hold.</div>
       <div class="sheetact"><button class="remove" id="l_del">Remove this entry</button></div>`;
   }
 
@@ -1207,6 +1267,16 @@ function wireSheet(){
     $("l_date").onchange = async ev => { if (ev.target.value){ e.date = ev.target.value; await redraw(); } };
     $("l_every").onchange = async ev => { e.every = ev.target.value || null; if (!e.every) e.until = null; await redraw(); };
     if ($("l_until")) $("l_until").onchange = async ev => { e.until = ev.target.value || null; await redraw(); };
+    if ($("l_shotadd")) $("l_shotadd").onclick = () => $("l_file").click();
+    if ($("l_file")) $("l_file").onchange = async ev => {
+      const f = ev.target.files && ev.target.files[0];
+      if (!f) return;
+      toast("Processing the photo\u2026");
+      if (await attachReceipt(e, f)) { render(); const s = document.getElementById("sheet"); s.innerHTML = sheetBody(); wireSheet(); }
+    };
+    if ($("l_shotdel")) $("l_shotdel").onclick = async () => {
+      delete e.shot; await redraw();
+    };
     $("l_del").onclick = async () => {
       if (!confirm("Remove this entry?")) return;
       S.letting.entries = S.letting.entries.filter(x => x.id !== id);
@@ -1346,14 +1416,20 @@ function winansi(s){
 }
 const pdfEsc = s => winansi(s).replace(/\\/g,"\\\\").replace(/\(/g,"\\(").replace(/\)/g,"\\)");
 
+function b64bin(b64){
+  if (typeof atob === "function") return atob(b64);
+  return Buffer.from(b64, "base64").toString("binary");
+}
 function buildPdf(doc){
   const PW = 595.28, PH = 841.89, M = 52;
   const pages = [];
+  const pageImgs = [];
   let ops = [], y = 0, pageNo = 0;
 
   const startPage = () => {
     pageNo++;
     ops = [];
+    pageImgs.push([]);
     y = PH - M;
     if (pageNo === 1){
       ops.push(`BT 0 g /F2 20 Tf 1 0 0 1 ${M} ${y-6} Tm (${pdfEsc(doc.title)}) Tj ET`);
@@ -1366,6 +1442,7 @@ function buildPdf(doc){
     }
   };
   const room = need => { if (y - need < M + 34){ pages.push(ops); startPage(); } };
+  const newPage = () => { pages.push(ops); startPage(); };
   const rule = () => {
     ops.push(`0.86 G 0.6 w ${M} ${y.toFixed(1)} m ${(PW-M).toFixed(1)} ${y.toFixed(1)} l S`);
   };
@@ -1395,6 +1472,18 @@ function buildPdf(doc){
       y -= 8;
       rule();
       y -= 4;
+    } else if (b.type === "image"){
+      newPage();
+      if (b.caption){ left(b.caption, 12, "F2", "0", 0); y -= 16; }
+      if (b.sub){ left(b.sub, 9.5, "F1", "0.45", 0); y -= 14; }
+      y -= 6;
+      const availW = PW - M*2, availH = y - M - 10;
+      const sc = Math.min(availW / b.w, availH / b.h);
+      const dw = b.w * sc, dh = b.h * sc;
+      const name = "Im" + pageImgs[pageNo-1].length;
+      pageImgs[pageNo-1].push({name, data:b.data, w:b.w, h:b.h});
+      ops.push(`q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${M} ${(y-dh).toFixed(2)} cm /${name} Do Q`);
+      y -= dh + 6;
     } else if (b.type === "note"){
       const lines = wrap(b.text, 9.5, PW - M*2);
       room(lines.length * 13 + 8);
@@ -1424,18 +1513,31 @@ function buildPdf(doc){
   });
 
   /* assemble */
-  const objs = [];
   const nPages = streams.length;
-  const pageIds = streams.map((_,i) => 4 + i*2);
-  objs[1] = `<< /Type /Catalog /Pages 2 0 R >>`;
-  objs[2] = `<< /Type /Pages /Kids [${pageIds.map(id => id+" 0 R").join(" ")}] /Count ${nPages} >>`;
-  objs[3] = `<< /Font << /F1 ${4+nPages*2} 0 R /F2 ${5+nPages*2} 0 R >> >>`;
+  const objs = [];
+  const put = (i,s) => { objs[i] = s; };
+  const FONT1 = 3, FONT2 = 4;
+  const pageId = i => 5 + i*2;
+  const contId = i => 6 + i*2;
+  let nextId = 5 + nPages*2;
+  const imgIds = pageImgs.map(list => list.map(() => nextId++));
+
+  put(1, `<< /Type /Catalog /Pages 2 0 R >>`);
+  put(2, `<< /Type /Pages /Kids [${streams.map((_,i) => pageId(i)+" 0 R").join(" ")}] /Count ${nPages} >>`);
+  put(FONT1, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`);
+  put(FONT2, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`);
   streams.forEach((s,i) => {
-    objs[pageIds[i]] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW.toFixed(2)} ${PH.toFixed(2)}] /Resources 3 0 R /Contents ${pageIds[i]+1} 0 R >>`;
-    objs[pageIds[i]+1] = `<< /Length ${s.length} >>\nstream\n${s}\nendstream`;
+    const xo = (pageImgs[i] || []).map((im,j) => `/${im.name} ${imgIds[i][j]} 0 R`).join(" ");
+    put(pageId(i), `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW.toFixed(2)} ${PH.toFixed(2)}] ` +
+      `/Resources << /Font << /F1 ${FONT1} 0 R /F2 ${FONT2} 0 R >>${xo ? ` /XObject << ${xo} >>` : ""} >> ` +
+      `/Contents ${contId(i)} 0 R >>`);
+    put(contId(i), `<< /Length ${s.length} >>\nstream\n${s}\nendstream`);
   });
-  objs[4+nPages*2] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`;
-  objs[5+nPages*2] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`;
+  pageImgs.forEach((list,i) => list.forEach((im,j) => {
+    const bin = b64bin(im.data);
+    put(imgIds[i][j], `<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} ` +
+      `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bin.length} >>\nstream\n${bin}\nendstream`);
+  }));
 
   let out = "%PDF-1.4\n";
   const offsets = [];
@@ -1582,6 +1684,17 @@ function docFor(v){
       note("The credit is 20% of the lowest of three figures: finance costs, property profit, and adjusted total income above the personal allowance. Only the first two are tested here, so check the third before relying on this.");
     }
     if (s.none > 0.004) note("Not allowable, recorded for your own reference only: " + money(s.none) + ". Capital repayments and improvements do not reduce rental profit.");
+    const withShots = s.rows.filter(r => r.shot);
+    if (withShots.length){
+      const seen = {};
+      withShots.forEach(r => {
+        if (seen[r.id]) return;
+        seen[r.id] = 1;
+        B.push({type:"image", data:r.shot.data, w:r.shot.w, h:r.shot.h,
+          caption:(r.desc || SA[r.cat].label) + "  \u00B7  " + money(r.amount),
+          sub:"Box " + SA[r.cat].box + "  \u00B7  " + fmt(r.date) + (r.every === "month" ? ", recurring" : "")});
+      });
+    }
     note("Prepared from your own records. Mortgage interest sits in box 44 rather than the expense boxes because of the Section 24 restriction. Check the figures before they go anywhere near a return.");
     return {title:"Rental, " + tyLabel(y), subtitle:"6 April " + y + " to 5 April " + (y+1), blocks:B, stamp};
   }
