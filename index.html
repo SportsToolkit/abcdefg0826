@@ -271,6 +271,22 @@ nav{grid-template-columns:repeat(6,1fr)}
 nav button{font-size:10px;gap:2px}
 nav button svg{width:22px;height:22px}
 nav button[data-v="letting"].on{color:var(--let)}
+
+.potname{display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-size:17px;text-align:left;padding:4px 0}
+.potname .kchip{width:7px;height:7px;border-radius:50%;flex:none}
+.potname .ktext{font-size:12px;color:var(--muted);font-weight:500}
+.donutwrap{display:flex;align-items:center;gap:18px;padding:18px 16px}
+.donut{width:126px;height:126px;flex:none}
+.legendlist{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.lrow{display:flex;align-items:center;gap:8px;font-size:14px}
+.lrow .ln{flex:1;color:var(--muted)}
+.lrow .lp{width:34px;text-align:right;color:var(--muted);font-size:13px}
+.lrow .lv{font-weight:600}
+.seg.four{grid-template-columns:repeat(2,1fr)}
+.seg button.k_need.on{background:var(--needSoft);color:var(--need);border-color:var(--need)}
+.seg button.k_save.on{background:var(--saveSoft);color:var(--save);border-color:var(--save)}
+.seg button.k_want.on{background:var(--wantSoft);color:var(--want);border-color:var(--want)}
+.seg button.k_let.on{background:var(--letSoft);color:var(--let);border-color:var(--let)}
 </style>
 </head>
 <body>
@@ -546,20 +562,27 @@ function lettingRows(y){
   });
   return out.sort((a,b) => a.date < b.date ? -1 : 1);
 }
+const claimed = r => r.amount * ((r.pc == null ? 100 : r.pc) / 100);
 function lettingSums(y){
   const rows = lettingRows(y), s = {rent:0, fin:0, none:0, exp:0, byBox:{}};
   SAORDER.forEach(k => s.byBox[k] = 0);
   rows.forEach(r => {
-    if (r.cat === "rent") s.rent += r.amount;
-    else if (r.cat === "fin") s.fin += r.amount;
-    else if (r.cat === "none") s.none += r.amount;
-    else { s.byBox[r.cat] = (s.byBox[r.cat]||0) + r.amount; s.exp += r.amount; }
+    const v = claimed(r);
+    if (r.cat === "rent") s.rent += v;
+    else if (r.cat === "fin") s.fin += v;
+    else if (r.cat === "none") s.none += v;
+    else { s.byBox[r.cat] = (s.byBox[r.cat]||0) + v; s.exp += v; }
   });
   const share = (S.letting.share == null ? 100 : S.letting.share) / 100;
   ["rent","fin","none","exp"].forEach(k => s[k] *= share);
   SAORDER.forEach(k => s.byBox[k] *= share);
   s.profit = s.rent - s.exp;
-  s.reducer = s.fin * 0.2;
+  /* relief is 20% of the LOWEST of finance costs, property profit, and adjusted total
+     income above the personal allowance. We can test the first two here. */
+  s.relievable = Math.min(s.fin, Math.max(s.profit, 0));
+  s.reducer = s.relievable * 0.2;
+  s.cappedByProfit = s.fin > Math.max(s.profit, 0) + 0.004;
+  s.carried = Math.max(s.fin - s.relievable, 0);
   s.rows = rows;
   return s;
 }
@@ -840,6 +863,7 @@ function renderSavings(){
     </div>
 
     ${spark(labels, vals)}
+    ${donut(K)}
     ${S.pots.length ? `<div class="panel">${S.pots.map(p => {
       const b = balAt(p.id,K), q = balAt(p.id,pk);
       const fresh = entered[p.id] != null;
@@ -847,12 +871,14 @@ function renderSavings(){
       const meta = !b ? "not recorded yet"
         : fresh ? (d !== null && Math.abs(d) > 0.004 ? `${d>=0?"+":"−"}${money(Math.abs(d))} since ${prettyKey(pk)}` : "no change")
         : `carried from ${prettyKey(b.m)}`;
+      const kd = KIND[p.kind] || null;
       return `<div class="pot">
         <div class="top">
-          <div class="name">${esc(p.name)}</div>
+          <button class="potname" data-open="__pot:${p.id}">${esc(p.name)}
+            <span class="kchip" style="background:var(--${kd?kd.col:"faint"});opacity:${kd?1:.35}"></span>
+            <span class="ktext">${kd ? kd.label : "tag it"}</span></button>
           <input type="number" step="0.01" inputmode="decimal" data-pot="${p.id}"
             value="${b ? b.v : ""}" placeholder="0.00" aria-label="${esc(p.name)} balance">
-          <button class="x" data-delpot="${p.id}" aria-label="Remove ${esc(p.name)}">×</button>
         </div>
         <div class="meta ${fresh && d ? (d>0?"up":d<0?"down":"") : ""}">${meta}</div>
       </div>`;
@@ -872,36 +898,34 @@ function renderSavings(){
     if (!Object.keys(S.balances[K]).length) delete S.balances[K];
     await save(); render();
   });
-  document.querySelectorAll("[data-delpot]").forEach(el => el.onclick = async e => {
-    const id = e.currentTarget.dataset.delpot;
-    if (!confirm("Remove this pot and its history?")) return;
-    S.pots = S.pots.filter(p => p.id !== id);
-    Object.values(S.balances).forEach(b => delete b[id]);
-    await save(); render();
-  });
   document.getElementById("addpot").onclick = async () => {
-    const n = prompt("What is it called?");
-    if (!n) return;
-    S.pots.push({id:uid(),name:n.trim()});
-    await save(); render();
+    const p = {id:uid(), name:"New pot", kind:null};
+    S.pots.push(p); await save(); render(); openSheet("__pot:" + p.id);
   };
 }
 
 function renderLetting(){
   document.getElementById("title").textContent = "Rental";
   const L = S.letting, y = taxYear, s = lettingSums(y);
-  const [from,to] = tyRange(y);
-  const fmt = iso => { const [yy,mm,dd] = iso.split("-"); return dd + " " + ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][mm-1]; };
+  const shr = (L.share == null ? 100 : L.share) / 100;
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const fmt = iso => { const p = iso.split("-"); return Number(p[2]) + " " + MON[Number(p[1])-1]; };
   const group = k => {
     const rows = s.rows.filter(r => r.cat === k);
     if (!rows.length) return "";
-    const tot = rows.reduce((n,r) => n + r.amount, 0) * ((L.share==null?100:L.share)/100);
+    const tot = rows.reduce((n,r) => n + claimed(r), 0) * shr;
     return `<h2 class="sec"><span class="boxno">Box ${SA[k].box}</span>${SA[k].label}<span class="amt">${money(tot)}</span></h2>
-      <div class="panel">${rows.map(r => `<button class="row" data-open="__let:${r.id}:${r.date}">
-        <span class="name">${esc(r.desc||SA[k].label)}<small>${fmt(r.date)}${r.every==="month"?" \u00B7 monthly":""}</small></span>
-        <span class="amt num">${money(r.amount)}</span>
-        <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
-      </button>`).join("")}</div>`;
+      <div class="panel">${rows.map(r => {
+        const pc = r.pc == null ? 100 : r.pc;
+        const bits = [fmt(r.date)];
+        if (r.every === "month") bits.push("monthly");
+        if (pc !== 100) bits.push(pc + "% of " + money(r.amount));
+        return `<button class="row" data-open="__let:${r.id}:${r.date}">
+          <span class="name">${esc(r.desc || SA[k].label)}<small>${bits.join(" \u00B7 ")}</small></span>
+          <span class="amt num">${money(claimed(r))}</span>
+          <span class="chev"><svg viewBox="0 0 8 13"><path d="M1.5 1.5L6 6.5l-4.5 5"/></svg></span>
+        </button>`;
+      }).join("")}</div>`;
   };
   const allowanceBetter = s.rent > 1000 && s.exp < 1000;
 
@@ -917,24 +941,28 @@ function renderLetting(){
       <div class="sub num"><b>${money(s.rent)}</b> rent, <b>${money(s.exp)}</b> allowable costs</div>
     </div>
     ${s.fin > 0.004 ? `<div class="panel letpanel">
-      <div class="kv"><span>Residential finance costs, box 44</span><b class="num">${money(s.fin)}</b></div>
-      <div class="kv"><span>Basic rate reducer this gives you</span><b class="num" style="color:var(--let)">${money(s.reducer)}</b></div>
-      <div class="note">Mortgage interest is not deducted from profit. HMRC turns it into a 20% reduction in your tax bill instead. Only the interest counts, never the capital you repay.</div>
+      <div class="kv"><span>Finance costs, box 44</span><b class="num">${money(s.fin)}</b></div>
+      <div class="kv"><span>Relief is given on</span><b class="num">${money(s.relievable)}</b></div>
+      <div class="kv"><span>Tax credit at 20%</span><b class="num" style="color:var(--let)">${money(s.reducer)}</b></div>
+      ${s.carried > 0.004 ? `<div class="kv"><span>Unrelieved, carries to box 45</span><b class="num">${money(s.carried)}</b></div>` : ""}
+      <div class="note">Mortgage interest is never deducted from profit. You get a credit worth 20% of the lowest of three figures: finance costs ${money(s.fin)}, property profit ${money(Math.max(s.profit,0))}, and your income above the personal allowance.
+      ${s.cappedByProfit ? ` Your profit is the smaller of the first two, so the credit is capped and ${money(s.carried)} carries forward.` : ""}
+      This app cannot see your total income, so if that is the lowest the real credit is smaller. Interest only, never capital.</div>
     </div>` : ""}
-    ${allowanceBetter ? `<div class="hint">Your costs come to less than £1,000. Claiming the £1,000 property income allowance instead, box 20.1, would leave you better off by ${money(1000 - s.exp)} of taxable profit. You cannot claim both.</div>` : ""}
+    ${allowanceBetter ? `<div class="hint">Your costs come to under £1,000. Claiming the £1,000 property income allowance in box 20.1 instead would leave you better off by ${money(1000 - s.exp)} of taxable profit. You cannot claim both.</div>` : ""}
     ${group("rent")}
     ${SAORDER.map(group).join("")}
     ${group("fin")}
     ${group("none")}
-    ${s.rows.length ? "" : `<div class="panel"><div class="note">Nothing recorded for ${tyLabel(y)} yet. Add the rent first, set it to repeat monthly, then add costs as they come up.</div></div>`}
+    ${s.rows.length ? "" : `<div class="panel"><div class="note">Nothing recorded for ${tyLabel(y)} yet. Add the rent first and set it to repeat monthly, then add costs as they come up.</div></div>`}
     <button class="ghost primary" data-addlet="1">Add an entry</button>
     <h2 class="sec">Property</h2>
     <div class="panel">
-      <div class="kv"><span>Address or nickname</span><input type="text" id="laddr" value="${esc(L.address||"")}" style="width:190px;text-align:right"></div>
-      <div class="kv"><span>Your share of it</span><input type="number" min="1" max="100" id="lshare" value="${L.share==null?100:L.share}" style="width:96px"></div>
+      <div class="kv"><span>Address or nickname</span><input type="text" id="laddr" value="${esc(L.address||"")}" style="width:180px;text-align:right"></div>
+      <div class="kv"><span>Your share of it</span><input type="number" min="1" max="100" id="lshare" value="${L.share == null ? 100 : L.share}" style="width:96px"></div>
       <div class="note">Set your share below 100 if you own it jointly. Every figure above is then your portion only.</div>
     </div>
-    <div class="hint">Categories follow the SA105 UK property pages, so each section matches the box you copy it into. Keep the receipts; this is a record, not a submission.</div>`;
+    <div class="hint">Sections follow the SA105 UK property pages, so each one matches the box you copy it into. This is a record, not a submission, and it is not tax advice.</div>`;
 
   document.getElementById("typrev").onclick = () => { taxYear--; render(); };
   document.getElementById("tynext").onclick = () => { taxYear++; render(); };
@@ -942,6 +970,43 @@ function renderLetting(){
   document.getElementById("lshare").onchange = async e => {
     L.share = Math.max(1, Math.min(100, Number(e.target.value)||100)); await save(); render();
   };
+}
+
+function donut(m){
+  const groups = {};
+  S.pots.forEach(p => {
+    const b = balAt(p.id,m);
+    if (!b || !b.v) return;
+    const k = KIND[p.kind] ? p.kind : "untagged";
+    groups[k] = (groups[k]||0) + b.v;
+  });
+  const keys = Object.keys(groups);
+  if (keys.length < 2) return "";
+  const total = keys.reduce((s,k) => s + groups[k], 0);
+  if (total <= 0) return "";
+  const R = 52, C = 2 * Math.PI * R;
+  let off = 0;
+  const segs = keys.map(k => {
+    const frac = groups[k] / total;
+    const col = KIND[k] ? `var(--${KIND[k].col})` : "var(--faint)";
+    const s = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${col}" stroke-width="19"
+      stroke-dasharray="${(frac*C).toFixed(2)} ${(C - frac*C).toFixed(2)}"
+      stroke-dashoffset="${(-off*C).toFixed(2)}" transform="rotate(-90 70 70)"/>`;
+    off += frac;
+    return s;
+  }).join("");
+  const legend = keys.sort((x,z) => groups[z]-groups[x]).map(k => {
+    const kd = KIND[k];
+    return `<div class="lrow"><i class="dot" style="background:${kd?`var(--${kd.col})`:"var(--faint)"}"></i>
+      <span class="ln">${kd ? kd.label : "Not tagged"}</span>
+      <span class="lp num">${Math.round(groups[k]/total*100)}%</span>
+      <span class="lv num">${money0(groups[k])}</span></div>`;
+  }).join("");
+  return `<h2 class="sec">How it splits</h2>
+    <div class="panel donutwrap">
+      <svg viewBox="0 0 140 140" class="donut" role="img" aria-label="Savings split by type">${segs}</svg>
+      <div class="legendlist">${legend}</div>
+    </div>`;
 }
 
 function spark(labels, vals){
@@ -989,6 +1054,12 @@ function closeSheet(){
   document.body.classList.remove("locked");
 }
 
+const KIND = {
+  pension:{label:"Pension", col:"need"},
+  isa:    {label:"ISA",     col:"save"},
+  cash:   {label:"Cash",    col:"want"},
+  other:  {label:"Other",   col:"let"}
+};
 const SWATCH = ["#EA1D25","#FF4F40","#2C9C8F","#7B5BE0","#2F6FD0","#E08A1E","#1F8A5B","#8A8F98"];
 
 function sheetBody(){
@@ -1010,6 +1081,19 @@ function sheetBody(){
         ${tr.mine >= jointMine() ? `The extra ${money(tr.mine - jointMine())} builds buffer.` : `You are short by ${money(jointMine() - tr.mine)}.`}</div>`;
   }
 
+  if (String(sheetFor).startsWith("__pot:")){
+    const id = sheetFor.slice(6);
+    const p = S.pots.find(x => x.id === id);
+    if (!p) return head("Not found");
+    return head("Savings pot") + `
+      <div class="field"><label>Name</label><input type="text" id="p_name" value="${esc(p.name)}"></div>
+      <div class="field"><label>What kind is it</label>
+        <div class="seg four">${Object.keys(KIND).map(k =>
+          `<button class="k_${KIND[k].col}${p.kind===k?" on":""}" data-setkind="${k}">${KIND[k].label}</button>`).join("")}</div></div>
+      <div class="sheetnote">Tagging pots shows how much is locked away in a pension against what you could actually reach.</div>
+      <div class="sheetact"><button class="remove" id="p_del">Remove this pot and its history</button></div>`;
+  }
+
   if (String(sheetFor).startsWith("__let:")){
     const id = sheetFor.split(":")[1];
     const e = (S.letting.entries||[]).find(x => x.id === id);
@@ -1021,7 +1105,12 @@ function sheetBody(){
       <div class="field"><label>Counts as</label>
         <select id="l_cat">${Object.keys(SA).map(k =>
           `<option value="${k}"${e.cat===k?" selected":""}>Box ${SA[k].box} \u00B7 ${SA[k].label}</option>`).join("")}</select></div>
-      <div class="sheetnote">${e.cat === "fin" ? "Enter the interest only. The capital you repay is not a cost, log that as Not allowable if you want it recorded."
+      <div class="field"><label>How much of it you claim</label>
+        <input type="number" min="1" max="100" step="1" id="l_pc" value="${e.pc == null ? 100 : e.pc}"></div>
+      <div class="sheetnote">${(e.pc != null && e.pc !== 100)
+        ? "Claiming " + e.pc + "% of " + money(e.amount) + ", so " + money(e.amount * e.pc / 100) + " goes in box " + SA[e.cat].box + ". Apportion where the loan or property is not wholly for the letting, for example part year letting or private use. Leave it at 100 otherwise."
+        : "Leave this at 100 unless the cost is only partly for the letting. Part year letting, private use, or a loan covering more than one property are the usual reasons to apportion."}</div>
+      <div class="sheetnote">${e.cat === "fin" ? "Enter the interest only. The capital you repay is not a cost, log that as Not allowable if you want it recorded. All of it goes in box 44 for the 20% reducer, none of it is deducted from profit."
         : e.cat === "none" ? "Capital repayments and improvements are not allowable against rental profit. Logged here for your own records only."
         : e.cat === "rent" ? "Gross rent, before any agent commission. Put the commission in box 27 separately."
         : "Keep the receipt. HMRC can ask for it up to five years after the filing deadline."}</div>
@@ -1091,11 +1180,28 @@ function wireSheet(){
     $("s_tfrom").onchange = async e => { S.payFrom = e.target.value; await redraw(); };
     return;
   }
+  if (String(sheetFor).startsWith("__pot:")){
+    const id = sheetFor.slice(6);
+    const p = S.pots.find(x => x.id === id);
+    if (!p) return;
+    $("p_name").onchange = async ev => { p.name = ev.target.value; await redraw(); };
+    document.querySelectorAll("[data-setkind]").forEach(b => b.onclick = async ev => {
+      p.kind = ev.currentTarget.dataset.setkind; await redraw();
+    });
+    $("p_del").onclick = async () => {
+      if (!confirm("Remove " + p.name + " and its history?")) return;
+      S.pots = S.pots.filter(x => x.id !== id);
+      Object.values(S.balances).forEach(b => delete b[id]);
+      closeSheet(); await save(); render();
+    };
+    return;
+  }
   if (String(sheetFor).startsWith("__let:")){
     const id = sheetFor.split(":")[1];
     const e = (S.letting.entries||[]).find(x => x.id === id);
     if (!e) return;
     $("l_amt").onchange = async ev => { e.amount = Number(ev.target.value)||0; await redraw(); };
+    $("l_pc").onchange = async ev => { e.pc = Math.max(1, Math.min(100, Number(ev.target.value)||100)); await redraw(); };
     $("l_desc").onchange = async ev => { e.desc = ev.target.value; await redraw(); };
     $("l_cat").onchange = async ev => { e.cat = ev.target.value; await redraw(); };
     $("l_date").onchange = async ev => { if (ev.target.value){ e.date = ev.target.value; await redraw(); } };
@@ -1451,8 +1557,14 @@ function docFor(v){
       const rows = s.rows.filter(r => r.cat === k);
       if (!rows.length) return;
       sec("Box " + SA[k].box + "  \u00B7  " + SA[k].label);
-      rows.forEach(r => row(r.desc || SA[k].label, money(r.amount * shr), fmt(r.date) + (r.every==="month" ? ", monthly" : "")));
-      row("Total", money(rows.reduce((n,r)=>n+r.amount,0) * shr), null, true);
+      rows.forEach(r => {
+        const pc = r.pc == null ? 100 : r.pc;
+        const bits = [fmt(r.date)];
+        if (r.every === "month") bits.push("monthly");
+        if (pc !== 100) bits.push(pc + "% of " + money(r.amount) + " claimed");
+        row(r.desc || SA[k].label, money(claimed(r) * shr), bits.join(", "));
+      });
+      row("Total", money(rows.reduce((n,r)=>n+claimed(r),0) * shr), null, true);
     };
     block("rent"); SAORDER.forEach(block); block("fin"); block("none");
     sec("Summary for the return");
@@ -1462,7 +1574,12 @@ function docFor(v){
     row("Taxable profit", money(s.profit), null, true);
     if (s.fin > 0.004){
       row("Box 44, residential finance costs", money(s.fin), null, true);
-      row("Basic rate reducer this produces", money(s.reducer), "20% of box 44, applied against your tax bill");
+      row("Amount relief is given on", money(s.relievable), s.cappedByProfit
+        ? "capped at the property profit, which is lower than the finance costs"
+        : "the finance costs, being lower than the profit");
+      row("Basic rate tax credit", money(s.reducer), "20% of the line above, set against your income tax");
+      if (s.carried > 0.004) row("Box 45, unrelieved and carried forward", money(s.carried));
+      note("The credit is 20% of the lowest of three figures: finance costs, property profit, and adjusted total income above the personal allowance. Only the first two are tested here, so check the third before relying on this.");
     }
     if (s.none > 0.004) note("Not allowable, recorded for your own reference only: " + money(s.none) + ". Capital repayments and improvements do not reduce rental profit.");
     note("Prepared from your own records. Mortgage interest sits in box 44 rather than the expense boxes because of the Section 24 restriction. Check the figures before they go anywhere near a return.");
@@ -1483,6 +1600,13 @@ function docFor(v){
   });
   const now = potTotal(K), was = potTotal(pk);
   row("Total held", money(now), was ? ((now>=was?"up ":"down ") + money(Math.abs(now-was)) + " on " + prettyKey(pk)) : null, true);
+  const gr = {};
+  S.pots.forEach(p => { const b = balAt(p.id,K); if (b && b.v){ const k = KIND[p.kind] ? KIND[p.kind].label : "Not tagged"; gr[k] = (gr[k]||0) + b.v; } });
+  if (Object.keys(gr).length > 1){
+    sec("How it splits");
+    Object.keys(gr).sort((x,z) => gr[z]-gr[x]).forEach(k =>
+      row(k, money(gr[k]), now ? Math.round(gr[k]/now*100) + "% of the total" : null));
+  }
   sec("Paid in from your bills");
   row("Pensions, ISAs and debt", money(liveItems().filter(i => i.cat === "save").reduce((s,i) => s + myShare(i), 0)));
   return {title:"Savings", subtitle: mname(cursor) + "  ·  " + money0(now) + " held", blocks:B, stamp};
